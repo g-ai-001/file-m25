@@ -71,7 +71,8 @@ import app.file_m25.ui.components.LoadingIndicator
 import app.file_m25.ui.components.RenameDialog
 import app.file_m25.ui.components.CompressDialog
 import app.file_m25.ui.components.StorageIndicator
-import app.file_m25.util.FileUtils
+import app.file_m25.util.formatDate
+import app.file_m25.util.formatFileSize
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -175,8 +176,8 @@ fun HomeScreen(
         FileInfoDialog(
             fileName = file.name,
             filePath = file.path,
-            fileSize = if (file.isDirectory) "文件夹" else FileUtils.formatFileSize(file.size),
-            fileDate = FileUtils.formatDate(file.lastModified),
+            fileSize = if (file.isDirectory) "文件夹" else formatFileSize(file.size),
+            fileDate = formatDate(file.lastModified),
             fileType = if (file.isDirectory) "文件夹" else file.extension.uppercase().ifEmpty { "文件" },
             onDismiss = { viewModel.hideFileInfoDialog() }
         )
