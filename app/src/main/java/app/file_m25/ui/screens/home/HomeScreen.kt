@@ -1,5 +1,6 @@
 package app.file_m25.ui.screens.home
 
+import android.content.Intent
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -25,6 +26,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoveUp
 import androidx.compose.material.icons.filled.Search
@@ -57,7 +59,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import app.file_m25.domain.model.SortMode
 import app.file_m25.domain.model.ViewMode
@@ -74,6 +78,7 @@ import app.file_m25.ui.components.CompressDialog
 import app.file_m25.ui.components.StorageIndicator
 import app.file_m25.util.formatDate
 import app.file_m25.util.formatFileSize
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -85,11 +90,34 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsState()
     var showSortMenu by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
 
     LaunchedEffect(uiState.snackbarMessage) {
         uiState.snackbarMessage?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.clearSnackbarMessage()
+        }
+    }
+
+    LaunchedEffect(uiState.shareFilePath) {
+        uiState.shareFilePath?.let { path ->
+            try {
+                val file = File(path)
+                val uri = FileProvider.getUriForFile(
+                    context,
+                    "${context.packageName}.fileprovider",
+                    file
+                )
+                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                    type = "*/*"
+                    putExtra(Intent.EXTRA_STREAM, uri)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                context.startActivity(Intent.createChooser(shareIntent, "分享文件"))
+            } catch (e: Exception) {
+                snackbarHostState.showSnackbar("分享失败: ${e.message}")
+            }
+            viewModel.clearShareFile()
         }
     }
 
@@ -115,6 +143,7 @@ fun HomeScreen(
                         onNavigateToFile(file.path)
                     } else {
                         viewModel.selectFile(file)
+                        viewModel.addToRecent(file)
                     }
                 }
             )
@@ -123,6 +152,16 @@ fun HomeScreen(
             FavoritesModeScaffold(
                 uiState = uiState,
                 onBack = { viewModel.exitFavoritesMode() },
+                onNavigateToFile = onNavigateToFile,
+                onNavigateToSettings = onNavigateToSettings,
+                viewModel = viewModel,
+                snackbarHostState = snackbarHostState
+            )
+        }
+        uiState.showRecent -> {
+            RecentModeScaffold(
+                uiState = uiState,
+                onBack = { viewModel.exitRecentMode() },
                 onNavigateToFile = onNavigateToFile,
                 onNavigateToSettings = onNavigateToSettings,
                 viewModel = viewModel,
@@ -138,6 +177,7 @@ fun HomeScreen(
                 onNavigateToFile = onNavigateToFile,
                 onNavigateToSettings = onNavigateToSettings,
                 onEnterFavorites = { viewModel.enterFavoritesMode() },
+                onEnterRecent = { viewModel.enterRecentMode() },
                 viewModel = viewModel,
                 snackbarHostState = snackbarHostState
             )
@@ -157,6 +197,7 @@ fun HomeScreen(
             onCompress = { viewModel.showCompressDialog() },
             onExtract = { viewModel.showExtractDialog() },
             onToggleFavorite = { viewModel.toggleFavorite(file) },
+            onShare = { viewModel.shareFile(file) },
             onDismiss = { viewModel.selectFile(null) }
         )
     }
@@ -247,6 +288,7 @@ private fun NormalModeScaffold(
     onNavigateToFile: (String) -> Unit,
     onNavigateToSettings: () -> Unit,
     onEnterFavorites: () -> Unit,
+    onEnterRecent: () -> Unit,
     viewModel: HomeViewModel,
     snackbarHostState: SnackbarHostState
 ) {
@@ -257,6 +299,9 @@ private fun NormalModeScaffold(
                 actions = {
                     IconButton(onClick = { viewModel.enterSearchMode() }) {
                         Icon(Icons.Default.Search, contentDescription = "搜索")
+                    }
+                    IconButton(onClick = onEnterRecent) {
+                        Icon(Icons.Default.History, contentDescription = "最近")
                     }
                     IconButton(onClick = onEnterFavorites) {
                         Icon(Icons.Default.Star, contentDescription = "收藏")
@@ -340,6 +385,7 @@ private fun NormalModeScaffold(
                                             onNavigateToFile(file.path)
                                         } else {
                                             viewModel.selectFile(file)
+                                            viewModel.addToRecent(file)
                                         }
                                     },
                                     onLongClick = {
@@ -351,6 +397,7 @@ private fun NormalModeScaffold(
                                                 onNavigateToFile(file.path)
                                             } else {
                                                 viewModel.selectFile(file)
+                                                viewModel.addToRecent(file)
                                             }
                                         },
                                         onLongClick = {
@@ -376,6 +423,7 @@ private fun NormalModeScaffold(
                                             onNavigateToFile(file.path)
                                         } else {
                                             viewModel.selectFile(file)
+                                            viewModel.addToRecent(file)
                                         }
                                     }
                                 )
@@ -425,6 +473,82 @@ private fun FavoritesModeScaffold(
                 uiState.isLoading -> LoadingIndicator()
                 uiState.error != null -> EmptyState(message = uiState.error ?: "未知错误")
                 uiState.files.isEmpty() -> EmptyState(message = "暂无收藏")
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 16.dp)
+                    ) {
+                        items(uiState.files, key = { it.path }) { file ->
+                            FileListItem(
+                                file = file,
+                                onClick = {
+                                    if (file.isDirectory) {
+                                        onNavigateToFile(file.path)
+                                    } else {
+                                        viewModel.selectFile(file)
+                                    }
+                                },
+                                onLongClick = {
+                                    viewModel.selectFile(file)
+                                },
+                                modifier = Modifier.combinedClickable(
+                                    onClick = {
+                                        if (file.isDirectory) {
+                                            onNavigateToFile(file.path)
+                                        } else {
+                                            viewModel.selectFile(file)
+                                        }
+                                    },
+                                    onLongClick = {
+                                        viewModel.selectFile(file)
+                                    }
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RecentModeScaffold(
+    uiState: HomeUiState,
+    onBack: () -> Unit,
+    onNavigateToFile: (String) -> Unit,
+    onNavigateToSettings: () -> Unit,
+    viewModel: HomeViewModel,
+    snackbarHostState: SnackbarHostState
+) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("最近打开") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onNavigateToSettings) {
+                        Icon(Icons.Default.Settings, contentDescription = "设置")
+                    }
+                }
+            )
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            when {
+                uiState.isLoading -> LoadingIndicator()
+                uiState.error != null -> EmptyState(message = uiState.error ?: "未知错误")
+                uiState.files.isEmpty() -> EmptyState(message = "暂无最近文件")
                 else -> {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),

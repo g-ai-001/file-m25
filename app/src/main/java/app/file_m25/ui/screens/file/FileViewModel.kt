@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.file_m25.data.repository.FavoriteRepository
+import app.file_m25.data.repository.RecentRepository
 import app.file_m25.domain.model.FileItem
 import app.file_m25.domain.model.SortMode
 import app.file_m25.domain.model.ViewMode
@@ -44,7 +45,8 @@ data class FileUiState(
     val operationSourcePath: String? = null,
     val showFileInfoDialog: Boolean = false,
     val snackbarMessage: String? = null,
-    val isFavorite: Boolean = false
+    val isFavorite: Boolean = false,
+    val shareFilePath: String? = null
 )
 
 @HiltViewModel
@@ -56,7 +58,8 @@ class FileViewModel @Inject constructor(
     private val searchFilesUseCase: SearchFilesUseCase,
     private val copyFileUseCase: CopyFileUseCase,
     private val moveFileUseCase: MoveFileUseCase,
-    private val favoriteRepository: FavoriteRepository
+    private val favoriteRepository: FavoriteRepository,
+    private val recentRepository: RecentRepository
 ) : ViewModel() {
 
     private val encodedPath: String = savedStateHandle.get<String>("path") ?: ""
@@ -285,5 +288,19 @@ class FileViewModel @Inject constructor(
                 _uiState.update { it.copy(isFavorite = isFav) }
             }
         }
+    }
+
+    fun addToRecent(file: FileItem) {
+        viewModelScope.launch {
+            recentRepository.addRecent(file)
+        }
+    }
+
+    fun shareFile(file: FileItem) {
+        _uiState.update { it.copy(shareFilePath = file.path) }
+    }
+
+    fun clearShareFile() {
+        _uiState.update { it.copy(shareFilePath = null) }
     }
 }

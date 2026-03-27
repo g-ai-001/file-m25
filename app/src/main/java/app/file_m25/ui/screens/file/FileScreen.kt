@@ -1,5 +1,6 @@
 package app.file_m25.ui.screens.file
 
+import android.content.Intent
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -52,7 +53,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import app.file_m25.domain.model.SortMode
 import app.file_m25.domain.model.ViewMode
@@ -67,6 +70,7 @@ import app.file_m25.ui.components.DestinationPickerDialog
 import app.file_m25.ui.screens.home.FileOperationBottomSheet
 import app.file_m25.util.formatDate
 import app.file_m25.util.formatFileSize
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -79,11 +83,34 @@ fun FileScreen(
     val uiState by viewModel.uiState.collectAsState()
     var showSortMenu by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
 
     LaunchedEffect(uiState.snackbarMessage) {
         uiState.snackbarMessage?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.clearSnackbarMessage()
+        }
+    }
+
+    LaunchedEffect(uiState.shareFilePath) {
+        uiState.shareFilePath?.let { path ->
+            try {
+                val file = File(path)
+                val uri = FileProvider.getUriForFile(
+                    context,
+                    "${context.packageName}.fileprovider",
+                    file
+                )
+                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                    type = "*/*"
+                    putExtra(Intent.EXTRA_STREAM, uri)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                context.startActivity(Intent.createChooser(shareIntent, "分享文件"))
+            } catch (e: Exception) {
+                snackbarHostState.showSnackbar("分享失败: ${e.message}")
+            }
+            viewModel.clearShareFile()
         }
     }
 
@@ -107,6 +134,7 @@ fun FileScreen(
                     onNavigateToFile(file.path)
                 } else {
                     viewModel.selectFile(file)
+                    viewModel.addToRecent(file)
                 }
             }
         )
@@ -137,6 +165,7 @@ fun FileScreen(
             onCompress = { },
             onExtract = { },
             onToggleFavorite = { viewModel.toggleFavorite(file) },
+            onShare = { viewModel.shareFile(file) },
             onDismiss = { viewModel.selectFile(null) }
         )
     }
@@ -289,6 +318,7 @@ private fun NormalModeScaffold(
                                             onNavigateToFile(file.path)
                                         } else {
                                             viewModel.selectFile(file)
+                                            viewModel.addToRecent(file)
                                         }
                                     },
                                     onLongClick = {
@@ -300,6 +330,7 @@ private fun NormalModeScaffold(
                                                 onNavigateToFile(file.path)
                                             } else {
                                                 viewModel.selectFile(file)
+                                                viewModel.addToRecent(file)
                                             }
                                         },
                                         onLongClick = {
@@ -325,6 +356,7 @@ private fun NormalModeScaffold(
                                             onNavigateToFile(file.path)
                                         } else {
                                             viewModel.selectFile(file)
+                                            viewModel.addToRecent(file)
                                         }
                                     }
                                 )

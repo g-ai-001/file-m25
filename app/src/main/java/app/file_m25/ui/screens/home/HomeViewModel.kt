@@ -20,8 +20,10 @@ import app.file_m25.domain.usecase.CompressFilesUseCase
 import app.file_m25.domain.usecase.ExtractZipUseCase
 import app.file_m25.util.Logger
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.update
@@ -57,7 +59,9 @@ data class HomeUiState(
     val isExtracting: Boolean = false,
     val snackbarMessage: String? = null,
     val favoritePaths: Set<String> = emptySet(),
-    val showFavorites: Boolean = false
+    val showFavorites: Boolean = false,
+    val showRecent: Boolean = false,
+    val shareFilePath: String? = null
 )
 
 @HiltViewModel
@@ -72,7 +76,8 @@ class HomeViewModel @Inject constructor(
     private val moveFileUseCase: MoveFileUseCase,
     private val compressFilesUseCase: CompressFilesUseCase,
     private val extractZipUseCase: ExtractZipUseCase,
-    private val favoriteRepository: FavoriteRepository
+    private val favoriteRepository: FavoriteRepository,
+    private val recentRepository: RecentRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -423,5 +428,43 @@ class HomeViewModel @Inject constructor(
                     _uiState.update { it.copy(isLoading = false, files = favorites) }
                 }
         }
+    }
+
+    fun enterRecentMode() {
+        _uiState.update { it.copy(showRecent = true) }
+        loadRecentFiles()
+    }
+
+    fun exitRecentMode() {
+        _uiState.update { it.copy(showRecent = false) }
+        loadFiles()
+    }
+
+    private fun loadRecentFiles() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            recentRepository.getRecentFiles()
+                .catch { e ->
+                    Logger.e("HomeViewModel", "Failed to load recent files", e)
+                    _uiState.update { it.copy(isLoading = false, error = e.message) }
+                }
+                .collect { recentFiles ->
+                    _uiState.update { it.copy(isLoading = false, files = recentFiles) }
+                }
+        }
+    }
+
+    fun addToRecent(file: FileItem) {
+        viewModelScope.launch {
+            recentRepository.addRecent(file)
+        }
+    }
+
+    fun shareFile(file: FileItem) {
+        _uiState.update { it.copy(shareFilePath = file.path) }
+    }
+
+    fun clearShareFile() {
+        _uiState.update { it.copy(shareFilePath = null) }
     }
 }

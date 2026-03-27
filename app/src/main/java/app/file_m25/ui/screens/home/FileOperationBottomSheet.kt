@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoveUp
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material.icons.filled.Unarchive
@@ -40,6 +41,7 @@ fun FileOperationBottomSheet(
     onCompress: () -> Unit,
     onExtract: () -> Unit,
     onToggleFavorite: () -> Unit,
+    onShare: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState()
@@ -65,6 +67,17 @@ fun FileOperationBottomSheet(
                     .padding(horizontal = 8.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
+                TextButton(onClick = {
+                    onShare()
+                    onDismiss()
+                }) {
+                    Icon(
+                        Icons.Default.Share,
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                    Text("分享")
+                }
                 TextButton(onClick = {
                     onInfo()
                     onDismiss()

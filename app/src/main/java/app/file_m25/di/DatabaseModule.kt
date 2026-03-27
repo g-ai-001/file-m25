@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import app.file_m25.data.local.AppDatabase
 import app.file_m25.data.local.dao.FavoriteDao
+import app.file_m25.data.local.dao.RecentDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -22,12 +23,20 @@ object DatabaseModule {
             context,
             AppDatabase::class.java,
             "file_manager_db"
-        ).build()
+        )
+            .fallbackToDestructiveMigration()
+            .build()
     }
 
     @Provides
     @Singleton
     fun provideFavoriteDao(database: AppDatabase): FavoriteDao {
         return database.favoriteDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideRecentDao(database: AppDatabase): RecentDao {
+        return database.recentDao()
     }
 }
