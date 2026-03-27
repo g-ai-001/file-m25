@@ -1,0 +1,145 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+env:
+  JAVA_VERSION: '25'
+  GRADLE_VERSION: '9.4.1'
+  ANDROID_COMPILE_SDK: '36'
+  ANDROID_BUILD_TOOLS: '36.0.0'
+  APP_NAME: ${{ github.event.repository.name }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'gradle'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
+        with:
+          gradle-version: ${{ env.GRADLE_VERSION }}
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v5
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Create local.properties
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+
+      - name: Build debug APK
+        run: |
+          gradle assembleDebug --no-daemon
+
+      - name: Prepare package metadata
+        id: metadata
+        shell: bash
+        run: |
+          jversion="0.1.0"
+          
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            raw_tag="${{ github.ref_name }}"
+            echo "Detected Tag: $raw_tag"
+          
+            # 去除 'v' 或 'V' 前缀 (支持 v1.0.0, V1.0.0, 1.0.0)
+            version=$(echo "$raw_tag" | sed -E 's/^[vV]//')
+          
+            # 规范化版本 (只保留数字部分 x.y.z，去掉 -rc, -beta 等后缀用于 jpackage)
+            jversion=$(echo "$version" | sed -E 's/^([0-9]+\.[0-9]+(\.[0-9]+)?).*/\1/')
+          
+            if [ -z "$jversion" ]; then
+              echo "Warning: Could not parse numeric version from tag $raw_tag, defaulting to 0.1.0"
+              jversion="0.1.0"
+            fi
+            echo "Using Tag Version: $version (JPackage: $jversion)"
+          fi
+
+          echo "jversion=$jversion" >> $GITHUB_OUTPUT
+
+      - name: Rename APK
+        run: |
+          mv app/build/outputs/apk/**/*.apk ./${{ env.APP_NAME }}-${{ steps.metadata.outputs.jversion }}-debug.apk
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.APP_NAME }}-${{ steps.metadata.outputs.jversion }}-debug.apk
+          path: ${{ env.APP_NAME }}-${{ steps.metadata.outputs.jversion }}-debug.apk
+          retention-days: 1
+
+
+  # ========== 发布到 GitHub Releases ==========
+  release:
+    needs: [ build ]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # ✅ 仅 release job 需要写权限
+    environment: release  # ✅ 添加环境保护（可选：要求审批）
+
+    steps:
+      - name: Checkout code (for changelog)
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # ✅ 必须获取完整 tag 历史
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+          merge-multiple: true  # ✅ 简化目录结构
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          # 获取上一个标签
+          current_tag=${GITHUB_REF#refs/tags/}
+          prev_tag=$(git tag --sort=-version:refname | grep -v "^$current_tag$" | head -1)
+          
+          body_content=""
+          if [[ -n "$prev_tag" ]]; then
+            body_content=$(git log --pretty=format:"* %s (%h)" "$prev_tag".."$current_tag" -- . ":(exclude)docs" ":(exclude).github")
+          else
+            body_content="Initial release or no previous tag found."
+          fi
+          
+          # 写入输出，处理多行字符
+          {
+            echo "body<<EOF"
+            echo "$body_content"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          body: ${{ steps.notes.outputs.body }}
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-rc') || contains(github.ref_name, '-beta') }}  # ✅ 自动识别预发布
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
