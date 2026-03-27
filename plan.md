@@ -86,6 +86,10 @@
 - [x] HomeViewModel添加最近文件模式
 - [x] FileViewModel同步添加分享和最近文件功能
 
+### 0.5.1 (当前版本)
+**目标**: 修复GitHub Actions构建错误
+- [x] 修复HomeViewModel缺少RecentRepository导入错误
+
 ## 功能优先级
 1. 基础文件浏览 - P0
 2. 文件操作(创建/删除/重命名) - P0
