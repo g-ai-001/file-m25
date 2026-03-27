@@ -688,5 +688,3 @@ private fun MultiSelectModeScaffold(
         }
     }
 }
-
-}
