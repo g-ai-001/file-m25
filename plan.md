@@ -49,6 +49,16 @@
 - [x] 深色模式主题优化
 - [x] 代码重构优化
 
+### 0.3.1 (当前版本)
+**目标**: 重构优化
+- [ ] 提取公共FileViewModel消除HomeViewModel和FileViewModel的重复代码
+- [ ] 统一工具函数位置（formatFileSize、formatDate）
+- [ ] 添加用户错误反馈（操作失败时显示Snackbar）
+- [ ] 修复moveFile原子性问题（复制后删除改为确认后再删除）
+- [ ] Logger添加shutdown方法
+- [ ] searchRecursive添加深度限制防止性能问题
+- [ ] 使用sealed class管理对话框状态
+
 ### 0.4.0 (待开发)
 **目标**: 高级功能
 - [ ] OTA文件更新

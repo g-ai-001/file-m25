@@ -38,10 +38,13 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -74,6 +77,14 @@ fun FileScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showSortMenu by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(uiState.snackbarMessage) {
+        uiState.snackbarMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearSnackbarMessage()
+        }
+    }
 
     if (uiState.isMultiSelectMode) {
         MultiSelectModeScaffold(
@@ -107,7 +118,8 @@ fun FileScreen(
             onHideSortMenu = { showSortMenu = false },
             onNavigateBack = onNavigateBack,
             onNavigateToFile = onNavigateToFile,
-            viewModel = viewModel
+            viewModel = viewModel,
+            snackbarHostState = snackbarHostState
         )
     }
 
@@ -187,7 +199,8 @@ private fun NormalModeScaffold(
     onHideSortMenu: () -> Unit,
     onNavigateBack: () -> Unit,
     onNavigateToFile: (String) -> Unit,
-    viewModel: FileViewModel
+    viewModel: FileViewModel,
+    snackbarHostState: SnackbarHostState
 ) {
     val pathParts = path.split("/").filter { it.isNotEmpty() }
 
@@ -247,7 +260,8 @@ private fun NormalModeScaffold(
                     }
                 }
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
         Column(
             modifier = Modifier

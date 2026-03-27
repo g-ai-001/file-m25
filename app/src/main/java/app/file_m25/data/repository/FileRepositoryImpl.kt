@@ -38,7 +38,7 @@ class FileRepositoryImpl @Inject constructor() : FileRepository {
             return@flow
         }
         val results = mutableListOf<FileItem>()
-        searchRecursive(File(searchPath), query, results, maxResults = 100)
+        searchRecursive(File(searchPath), query, results, maxResults = 100, maxDepth = 10, currentDepth = 0)
         emit(results)
     }
 
@@ -46,9 +46,11 @@ class FileRepositoryImpl @Inject constructor() : FileRepository {
         dir: File,
         query: String,
         results: MutableList<FileItem>,
-        maxResults: Int
+        maxResults: Int,
+        maxDepth: Int,
+        currentDepth: Int
     ) {
-        if (results.size >= maxResults) return
+        if (currentDepth >= maxDepth || results.size >= maxResults) return
         val files = dir.listFiles() ?: return
         for (file in files) {
             if (results.size >= maxResults) break
@@ -56,7 +58,7 @@ class FileRepositoryImpl @Inject constructor() : FileRepository {
                 results.add(FileItem.fromFile(file))
             }
             if (file.isDirectory && !file.name.startsWith(".")) {
-                searchRecursive(file, query, results, maxResults)
+                searchRecursive(file, query, results, maxResults, maxDepth, currentDepth + 1)
             }
         }
     }
@@ -150,10 +152,27 @@ class FileRepositoryImpl @Inject constructor() : FileRepository {
             if (dest.exists()) {
                 return@withContext Result.failure(Exception("目标文件已存在"))
             }
+            // 先尝试直接重命名（高效且原子）
+            val renameSuccess = source.renameTo(dest)
+            if (renameSuccess) {
+                Logger.i("FileRepository", "Moved $sourcePath to ${dest.absolutePath}")
+                return@withContext Result.success(dest.absolutePath)
+            }
+            // 如果重命名失败（如同分区跨设备），使用复制+删除方式
             source.copyTo(dest, overwrite = false)
-            source.deleteRecursively()
-            Logger.i("FileRepository", "Moved $sourcePath to ${dest.absolutePath}")
-            Result.success(dest.absolutePath)
+            val deleteSuccess = if (source.isDirectory) {
+                source.deleteRecursively()
+            } else {
+                source.delete()
+            }
+            if (deleteSuccess) {
+                Logger.i("FileRepository", "Moved $sourcePath to ${dest.absolutePath}")
+                Result.success(dest.absolutePath)
+            } else {
+                // 复制成功但删除失败，清理目标文件并返回错误
+                dest.deleteRecursively()
+                Result.failure(Exception("移动文件失败：无法删除源文件"))
+            }
         } catch (e: Exception) {
             Logger.e("FileRepository", "Failed to move", e)
             Result.failure(e)

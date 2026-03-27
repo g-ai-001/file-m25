@@ -41,7 +41,8 @@ data class FileUiState(
     val showCopyDialog: Boolean = false,
     val showMoveDialog: Boolean = false,
     val operationSourcePath: String? = null,
-    val showFileInfoDialog: Boolean = false
+    val showFileInfoDialog: Boolean = false,
+    val snackbarMessage: String? = null
 )
 
 @HiltViewModel
@@ -112,6 +113,7 @@ class FileViewModel @Inject constructor(
                 loadFiles()
             }.onFailure { e ->
                 Logger.e("FileViewModel", "Failed to rename file", e)
+                showError("重命名失败: ${e.message}")
             }
         }
     }
@@ -135,6 +137,7 @@ class FileViewModel @Inject constructor(
                 loadFiles()
             }.onFailure { e ->
                 Logger.e("FileViewModel", "Failed to delete file", e)
+                showError("删除失败: ${e.message}")
             }
         }
     }
@@ -231,6 +234,7 @@ class FileViewModel @Inject constructor(
                 loadFiles()
             }.onFailure { e ->
                 Logger.e("FileViewModel", "Failed to copy file", e)
+                showError("复制失败: ${e.message}")
             }
         }
     }
@@ -246,7 +250,16 @@ class FileViewModel @Inject constructor(
                 loadFiles()
             }.onFailure { e ->
                 Logger.e("FileViewModel", "Failed to move file", e)
+                showError("移动失败: ${e.message}")
             }
         }
+    }
+
+    fun showError(message: String) {
+        _uiState.update { it.copy(snackbarMessage = message) }
+    }
+
+    fun clearSnackbarMessage() {
+        _uiState.update { it.copy(snackbarMessage = null) }
     }
 }

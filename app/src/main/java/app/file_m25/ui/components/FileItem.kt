@@ -30,9 +30,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.file_m25.domain.model.FileItem
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import app.file_m25.util.formatDate
+import app.file_m25.util.formatFileSize
 
 @Composable
 fun FileListItem(
@@ -210,21 +209,4 @@ fun getFileBackgroundColor(file: FileItem): Color {
         file.mimeType.startsWith("video/") -> Color(0xFFFFEBEE)
         else -> Color(0xFFE3F2FD)
     }
-}
-
-fun formatFileSize(size: Long): String {
-    if (size <= 0) return "0 B"
-    val units = arrayOf("B", "KB", "MB", "GB", "TB")
-    var value = size.toDouble()
-    var unitIndex = 0
-    while (value >= 1024 && unitIndex < units.size - 1) {
-        value /= 1024
-        unitIndex++
-    }
-    return if (unitIndex == 0) "${value.toInt()} ${units[unitIndex]}" else "%.1f %s".format(value, units[unitIndex])
-}
-
-fun formatDate(timestamp: Long): String {
-    val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
-    return sdf.format(Date(timestamp))
 }

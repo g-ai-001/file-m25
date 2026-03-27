@@ -42,10 +42,13 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -79,6 +82,14 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showSortMenu by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(uiState.snackbarMessage) {
+        uiState.snackbarMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearSnackbarMessage()
+        }
+    }
 
     if (uiState.isMultiSelectMode) {
         MultiSelectModeScaffold(
@@ -111,7 +122,8 @@ fun HomeScreen(
             onHideSortMenu = { showSortMenu = false },
             onNavigateToFile = onNavigateToFile,
             onNavigateToSettings = onNavigateToSettings,
-            viewModel = viewModel
+            viewModel = viewModel,
+            snackbarHostState = snackbarHostState
         )
     }
 
@@ -215,7 +227,8 @@ private fun NormalModeScaffold(
     onHideSortMenu: () -> Unit,
     onNavigateToFile: (String) -> Unit,
     onNavigateToSettings: () -> Unit,
-    viewModel: HomeViewModel
+    viewModel: HomeViewModel,
+    snackbarHostState: SnackbarHostState
 ) {
     Scaffold(
         topBar = {
@@ -271,7 +284,8 @@ private fun NormalModeScaffold(
             FloatingActionButton(onClick = { viewModel.showCreateFolderDialog() }) {
                 Icon(Icons.Default.Add, contentDescription = "新建文件夹")
             }
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
         Column(
             modifier = Modifier

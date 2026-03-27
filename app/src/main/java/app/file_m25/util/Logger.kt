@@ -100,4 +100,10 @@ object Logger {
     fun getLogFile(): File? {
         return if (isInitialized) File(logDir, LOG_FILE_NAME) else null
     }
+
+    fun shutdown() {
+        if (isInitialized) {
+            executor.shutdown()
+        }
+    }
 }

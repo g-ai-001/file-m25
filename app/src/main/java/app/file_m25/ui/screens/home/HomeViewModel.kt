@@ -53,7 +53,8 @@ data class HomeUiState(
     val showCompressDialog: Boolean = false,
     val showExtractDialog: Boolean = false,
     val isCompressing: Boolean = false,
-    val isExtracting: Boolean = false
+    val isExtracting: Boolean = false,
+    val snackbarMessage: String? = null
 )
 
 @HiltViewModel
@@ -138,6 +139,7 @@ class HomeViewModel @Inject constructor(
                 loadFiles()
             }.onFailure { e ->
                 Logger.e("HomeViewModel", "Failed to create folder", e)
+                showError("创建文件夹失败: ${e.message}")
             }
         }
     }
@@ -161,6 +163,7 @@ class HomeViewModel @Inject constructor(
                 loadFiles()
             }.onFailure { e ->
                 Logger.e("HomeViewModel", "Failed to rename file", e)
+                showError("重命名失败: ${e.message}")
             }
         }
     }
@@ -185,6 +188,7 @@ class HomeViewModel @Inject constructor(
                 loadStorageInfo()
             }.onFailure { e ->
                 Logger.e("HomeViewModel", "Failed to delete file", e)
+                showError("删除失败: ${e.message}")
             }
         }
     }
@@ -281,6 +285,7 @@ class HomeViewModel @Inject constructor(
                 loadFiles()
             }.onFailure { e ->
                 Logger.e("HomeViewModel", "Failed to copy file", e)
+                showError("复制失败: ${e.message}")
             }
         }
     }
@@ -297,6 +302,7 @@ class HomeViewModel @Inject constructor(
                 loadStorageInfo()
             }.onFailure { e ->
                 Logger.e("HomeViewModel", "Failed to move file", e)
+                showError("移动失败: ${e.message}")
             }
         }
     }
@@ -317,6 +323,14 @@ class HomeViewModel @Inject constructor(
         _uiState.update { it.copy(showExtractDialog = false) }
     }
 
+    fun showError(message: String) {
+        _uiState.update { it.copy(snackbarMessage = message) }
+    }
+
+    fun clearSnackbarMessage() {
+        _uiState.update { it.copy(snackbarMessage = null) }
+    }
+
     fun compressFiles(fileName: String) {
         val selectedFile = _uiState.value.selectedFile ?: return
         viewModelScope.launch {
@@ -331,6 +345,7 @@ class HomeViewModel @Inject constructor(
                 loadFiles()
             }.onFailure { e ->
                 Logger.e("HomeViewModel", "Failed to compress files", e)
+                showError("压缩失败: ${e.message}")
             }
             _uiState.update { it.copy(isCompressing = false) }
         }
@@ -348,6 +363,7 @@ class HomeViewModel @Inject constructor(
                 loadFiles()
             }.onFailure { e ->
                 Logger.e("HomeViewModel", "Failed to extract zip", e)
+                showError("解压失败: ${e.message}")
             }
             _uiState.update { it.copy(isExtracting = false) }
         }

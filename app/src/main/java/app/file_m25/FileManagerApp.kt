@@ -11,4 +11,9 @@ class FileManagerApp : Application() {
         Logger.init(this)
         Logger.d("FileManagerApp", "Application started")
     }
+
+    override fun onTerminate() {
+        super.onTerminate()
+        Logger.shutdown()
+    }
 }

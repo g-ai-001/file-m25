@@ -19,7 +19,7 @@ object FileUtils {
     }
 
     fun formatDate(timestamp: Long): String {
-        val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+        val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
         return sdf.format(Date(timestamp))
     }
 }
