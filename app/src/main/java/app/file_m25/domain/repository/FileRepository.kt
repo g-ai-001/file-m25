@@ -14,6 +14,8 @@ interface FileRepository {
     suspend fun copyFile(sourcePath: String, destFolder: String): Result<String>
     suspend fun moveFile(sourcePath: String, destFolder: String): Result<String>
     suspend fun getStorageInfo(): StorageInfo
+    suspend fun compressToZip(sourcePaths: List<String>, destPath: String): Result<String>
+    suspend fun extractZip(zipPath: String, destFolder: String): Result<String>
 }
 
 data class StorageInfo(

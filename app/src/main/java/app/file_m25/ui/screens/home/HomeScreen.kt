@@ -66,6 +66,7 @@ import app.file_m25.ui.components.FileInfoDialog
 import app.file_m25.ui.components.FileListItem
 import app.file_m25.ui.components.LoadingIndicator
 import app.file_m25.ui.components.RenameDialog
+import app.file_m25.ui.components.CompressDialog
 import app.file_m25.ui.components.StorageIndicator
 import app.file_m25.util.FileUtils
 
@@ -117,11 +118,14 @@ fun HomeScreen(
     uiState.selectedFile?.let { file ->
         FileOperationBottomSheet(
             fileName = file.name,
+            isZipFile = file.extension.lowercase() == "zip",
             onInfo = { viewModel.showFileInfoDialog() },
             onRename = { viewModel.showRenameDialog() },
             onCopy = { viewModel.showCopyDialog() },
             onMove = { viewModel.showMoveDialog() },
             onDelete = { viewModel.showDeleteDialog() },
+            onCompress = { viewModel.showCompressDialog() },
+            onExtract = { viewModel.showExtractDialog() },
             onDismiss = { viewModel.selectFile(null) }
         )
     }
@@ -181,6 +185,23 @@ fun HomeScreen(
             currentPath = uiState.currentPath,
             onDismiss = { viewModel.hideMoveDialog() },
             onConfirm = { dest -> viewModel.moveFile(dest) }
+        )
+    }
+
+    if (uiState.showCompressDialog && uiState.selectedFile != null) {
+        CompressDialog(
+            currentName = uiState.selectedFile!!.nameWithoutExtension,
+            onDismiss = { viewModel.hideCompressDialog() },
+            onConfirm = { name -> viewModel.compressFiles(name) }
+        )
+    }
+
+    if (uiState.showExtractDialog) {
+        DestinationPickerDialog(
+            title = "解压到",
+            currentPath = uiState.currentPath,
+            onDismiss = { viewModel.hideExtractDialog() },
+            onConfirm = { dest -> viewModel.extractZip(dest) }
         )
     }
 }

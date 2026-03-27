@@ -281,3 +281,55 @@ fun DestinationPickerDialog(
         }
     )
 }
+
+@Composable
+fun CompressDialog(
+    currentName: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    var fileName by remember { mutableStateOf(currentName) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("压缩文件") },
+        text = {
+            Column {
+                Text("将创建 ${fileName}.zip 文件", style = MaterialTheme.typography.bodyMedium)
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = fileName,
+                    onValueChange = {
+                        fileName = it
+                        error = null
+                    },
+                    label = { Text("文件名（不含扩展名）") },
+                    singleLine = true,
+                    isError = error != null,
+                    supportingText = error?.let { { Text(it) } },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    when {
+                        fileName.isBlank() -> error = "名称不能为空"
+                        fileName.contains("/") || fileName.contains("\\") -> error = "名称不能包含 / 或 \\"
+                        fileName.contains(".zip", ignoreCase = true) -> error = "文件名不能包含.zip"
+                        else -> onConfirm(fileName)
+                    }
+                }
+            ) {
+                Text("压缩")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
+}

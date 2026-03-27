@@ -39,6 +39,7 @@ fun FileListItem(
     file: FileItem,
     onClick: () -> Unit,
     onLongClick: () -> Unit = {},
+    showThumbnail: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -49,12 +50,19 @@ fun FileListItem(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Icon(
-            imageVector = getFileIcon(file),
-            contentDescription = null,
-            modifier = Modifier.size(40.dp),
-            tint = getFileIconColor(file)
-        )
+        if (showThumbnail && !file.isDirectory && (file.mimeType.startsWith("image/") || file.mimeType.startsWith("video/"))) {
+            ThumbnailImage(
+                file = file,
+                size = 40.dp
+            )
+        } else {
+            Icon(
+                imageVector = getFileIcon(file),
+                contentDescription = null,
+                modifier = Modifier.size(40.dp),
+                tint = getFileIconColor(file)
+            )
+        }
 
         Column(
             modifier = Modifier.weight(1f)
@@ -89,6 +97,7 @@ fun FileListItem(
 fun FileGridItem(
     file: FileItem,
     onClick: () -> Unit,
+    showThumbnail: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -105,12 +114,19 @@ fun FileGridItem(
                 .background(getFileBackgroundColor(file)),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = getFileIcon(file),
-                contentDescription = null,
-                modifier = Modifier.size(32.dp),
-                tint = getFileIconColor(file)
-            )
+            if (showThumbnail && !file.isDirectory && (file.mimeType.startsWith("image/") || file.mimeType.startsWith("video/"))) {
+                ThumbnailImage(
+                    file = file,
+                    size = 56.dp
+                )
+            } else {
+                Icon(
+                    imageVector = getFileIcon(file),
+                    contentDescription = null,
+                    modifier = Modifier.size(32.dp),
+                    tint = getFileIconColor(file)
+                )
+            }
         }
         Text(
             text = file.name,

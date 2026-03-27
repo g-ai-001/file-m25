@@ -11,6 +11,11 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.util.zip.ZipEntry
+import java.util.zip.ZipInputStream
+import java.util.zip.ZipOutputStream
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -162,5 +167,84 @@ class FileRepositoryImpl @Inject constructor() : FileRepository {
         val freeSpace = stat.blockSizeLong * stat.availableBlocksLong
         val usedSpace = totalSpace - freeSpace
         StorageInfo(totalSpace, freeSpace, usedSpace)
+    }
+
+    override suspend fun compressToZip(sourcePaths: List<String>, destPath: String): Result<String> = withContext(Dispatchers.IO) {
+        try {
+            val destFile = File(destPath)
+            ZipOutputStream(FileOutputStream(destFile)).use { zos ->
+                for (sourcePath in sourcePaths) {
+                    val sourceFile = File(sourcePath)
+                    if (sourceFile.exists()) {
+                        if (sourceFile.isDirectory) {
+                            compressDirectory(zos, sourceFile, sourceFile.parentFile.absolutePath)
+                        } else {
+                            compressFile(zos, sourceFile, "")
+                        }
+                    }
+                }
+            }
+            Logger.i("FileRepository", "Compressed ${sourcePaths.size} items to $destPath")
+            Result.success(destPath)
+        } catch (e: Exception) {
+            Logger.e("FileRepository", "Failed to compress files", e)
+            Result.failure(e)
+        }
+    }
+
+    private fun compressDirectory(zos: ZipOutputStream, directory: File, basePath: String) {
+        val files = directory.listFiles() ?: return
+        for (file in files) {
+            if (file.isDirectory) {
+                compressDirectory(zos, file, basePath)
+            } else {
+                compressFile(zos, file, directory.parentFile.absolutePath.removePrefix(basePath).removePrefix("/"))
+            }
+        }
+    }
+
+    private fun compressFile(zos: ZipOutputStream, file: File, relativePath: String) {
+        FileInputStream(file).use { fis ->
+            val entryName = if (relativePath.isNotEmpty()) {
+                "$relativePath/${file.name}"
+            } else {
+                file.name
+            }
+            zos.putNextEntry(ZipEntry(entryName))
+            fis.copyTo(zos)
+            zos.closeEntry()
+        }
+    }
+
+    override suspend fun extractZip(zipPath: String, destFolder: String): Result<String> = withContext(Dispatchers.IO) {
+        try {
+            val zipFile = File(zipPath)
+            val destDir = File(destFolder)
+            if (!destDir.exists()) {
+                destDir.mkdirs()
+            }
+
+            ZipInputStream(FileInputStream(zipFile)).use { zis ->
+                var entry = zis.nextEntry
+                while (entry != null) {
+                    val newFile = File(destDir, entry.name)
+                    if (entry.isDirectory) {
+                        newFile.mkdirs()
+                    } else {
+                        newFile.parentFile?.mkdirs()
+                        FileOutputStream(newFile).use { fos ->
+                            zis.copyTo(fos)
+                        }
+                    }
+                    zis.closeEntry()
+                    entry = zis.nextEntry
+                }
+            }
+            Logger.i("FileRepository", "Extracted $zipPath to $destFolder")
+            Result.success(destFolder)
+        } catch (e: Exception) {
+            Logger.e("FileRepository", "Failed to extract zip", e)
+            Result.failure(e)
+        }
     }
 }

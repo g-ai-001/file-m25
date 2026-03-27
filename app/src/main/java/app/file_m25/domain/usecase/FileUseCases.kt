@@ -98,3 +98,19 @@ class GetStorageInfoUseCase @Inject constructor(
         return repository.getStorageInfo()
     }
 }
+
+class CompressFilesUseCase @Inject constructor(
+    private val repository: FileRepository
+) {
+    suspend operator fun invoke(sourcePaths: List<String>, destPath: String): Result<String> {
+        return repository.compressToZip(sourcePaths, destPath)
+    }
+}
+
+class ExtractZipUseCase @Inject constructor(
+    private val repository: FileRepository
+) {
+    suspend operator fun invoke(zipPath: String, destFolder: String): Result<String> {
+        return repository.extractZip(zipPath, destFolder)
+    }
+}

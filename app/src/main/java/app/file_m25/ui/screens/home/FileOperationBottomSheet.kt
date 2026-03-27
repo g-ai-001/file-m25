@@ -6,11 +6,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Archive
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoveUp
+import androidx.compose.material.icons.filled.Unarchive
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -26,11 +28,14 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun FileOperationBottomSheet(
     fileName: String,
+    isZipFile: Boolean = false,
     onInfo: () -> Unit,
     onRename: () -> Unit,
     onCopy: () -> Unit,
     onMove: () -> Unit,
     onDelete: () -> Unit,
+    onCompress: () -> Unit,
+    onExtract: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState()
@@ -107,6 +112,30 @@ fun FileOperationBottomSheet(
                         modifier = Modifier.padding(end = 8.dp)
                     )
                     Text("移动")
+                }
+                TextButton(onClick = {
+                    onCompress()
+                    onDismiss()
+                }) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.Archive,
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                    Text("压缩")
+                }
+                if (isZipFile) {
+                    TextButton(onClick = {
+                        onExtract()
+                        onDismiss()
+                    }) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.Unarchive,
+                            contentDescription = null,
+                            modifier = Modifier.padding(end = 8.dp)
+                        )
+                        Text("解压")
+                    }
                 }
                 TextButton(onClick = {
                     onDelete()

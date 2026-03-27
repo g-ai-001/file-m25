@@ -15,6 +15,8 @@ import app.file_m25.domain.usecase.RenameFileUseCase
 import app.file_m25.domain.usecase.SearchFilesUseCase
 import app.file_m25.domain.usecase.CopyFileUseCase
 import app.file_m25.domain.usecase.MoveFileUseCase
+import app.file_m25.domain.usecase.CompressFilesUseCase
+import app.file_m25.domain.usecase.ExtractZipUseCase
 import app.file_m25.util.Logger
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,6 +25,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.File
 import javax.inject.Inject
 
 data class HomeUiState(
@@ -46,7 +49,11 @@ data class HomeUiState(
     val showCopyDialog: Boolean = false,
     val showMoveDialog: Boolean = false,
     val operationSourcePath: String? = null,
-    val showFileInfoDialog: Boolean = false
+    val showFileInfoDialog: Boolean = false,
+    val showCompressDialog: Boolean = false,
+    val showExtractDialog: Boolean = false,
+    val isCompressing: Boolean = false,
+    val isExtracting: Boolean = false
 )
 
 @HiltViewModel
@@ -58,7 +65,9 @@ class HomeViewModel @Inject constructor(
     private val getStorageInfoUseCase: GetStorageInfoUseCase,
     private val searchFilesUseCase: SearchFilesUseCase,
     private val copyFileUseCase: CopyFileUseCase,
-    private val moveFileUseCase: MoveFileUseCase
+    private val moveFileUseCase: MoveFileUseCase,
+    private val compressFilesUseCase: CompressFilesUseCase,
+    private val extractZipUseCase: ExtractZipUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -289,6 +298,58 @@ class HomeViewModel @Inject constructor(
             }.onFailure { e ->
                 Logger.e("HomeViewModel", "Failed to move file", e)
             }
+        }
+    }
+
+    fun showCompressDialog() {
+        _uiState.update { it.copy(showCompressDialog = true) }
+    }
+
+    fun hideCompressDialog() {
+        _uiState.update { it.copy(showCompressDialog = false) }
+    }
+
+    fun showExtractDialog() {
+        _uiState.update { it.copy(showExtractDialog = true) }
+    }
+
+    fun hideExtractDialog() {
+        _uiState.update { it.copy(showExtractDialog = false) }
+    }
+
+    fun compressFiles(fileName: String) {
+        val selectedFile = _uiState.value.selectedFile ?: return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isCompressing = true) }
+            val sourcePaths = listOf(selectedFile.path)
+            val destPath = File(_uiState.value.currentPath, "$fileName.zip").absolutePath
+            val result = compressFilesUseCase(sourcePaths, destPath)
+            result.onSuccess {
+                Logger.i("HomeViewModel", "Files compressed to: $destPath")
+                hideCompressDialog()
+                selectFile(null)
+                loadFiles()
+            }.onFailure { e ->
+                Logger.e("HomeViewModel", "Failed to compress files", e)
+            }
+            _uiState.update { it.copy(isCompressing = false) }
+        }
+    }
+
+    fun extractZip(destFolder: String) {
+        val selectedFile = _uiState.value.selectedFile ?: return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isExtracting = true) }
+            val result = extractZipUseCase(selectedFile.path, destFolder)
+            result.onSuccess {
+                Logger.i("HomeViewModel", "Zip extracted to: $destFolder")
+                hideExtractDialog()
+                selectFile(null)
+                loadFiles()
+            }.onFailure { e ->
+                Logger.e("HomeViewModel", "Failed to extract zip", e)
+            }
+            _uiState.update { it.copy(isExtracting = false) }
         }
     }
 }

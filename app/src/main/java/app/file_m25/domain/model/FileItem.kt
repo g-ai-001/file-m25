@@ -11,6 +11,13 @@ data class FileItem(
     val extension: String = "",
     val mimeType: String = ""
 ) {
+    val nameWithoutExtension: String
+        get() = if (extension.isNotEmpty()) {
+            name.removeSuffix(".$extension")
+        } else {
+            name
+        }
+
     companion object {
         fun fromFile(file: File): FileItem {
             return FileItem(
