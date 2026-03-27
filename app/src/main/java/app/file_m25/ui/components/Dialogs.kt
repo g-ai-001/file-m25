@@ -183,3 +183,101 @@ fun TextFieldDialog(
         }
     )
 }
+
+@Composable
+fun FileInfoDialog(
+    fileName: String,
+    filePath: String,
+    fileSize: String,
+    fileDate: String,
+    fileType: String,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("文件信息") },
+        text = {
+            Column {
+                InfoRow("名称", fileName)
+                Spacer(modifier = Modifier.height(8.dp))
+                InfoRow("路径", filePath)
+                Spacer(modifier = Modifier.height(8.dp))
+                InfoRow("大小", fileSize)
+                Spacer(modifier = Modifier.height(8.dp))
+                InfoRow("修改日期", fileDate)
+                Spacer(modifier = Modifier.height(8.dp))
+                InfoRow("类型", fileType)
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("关闭")
+            }
+        }
+    )
+}
+
+@Composable
+private fun InfoRow(label: String, value: String) {
+    Column {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium
+        )
+    }
+}
+
+@Composable
+fun DestinationPickerDialog(
+    title: String,
+    currentPath: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    var path by remember { mutableStateOf(currentPath) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = path,
+                    onValueChange = {
+                        path = it
+                        error = null
+                    },
+                    label = { Text("目标路径") },
+                    singleLine = true,
+                    isError = error != null,
+                    supportingText = error?.let { { Text(it) } },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    if (path.isBlank()) {
+                        error = "路径不能为空"
+                    } else {
+                        onConfirm(path)
+                    }
+                }
+            ) {
+                Text("确定")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
+}

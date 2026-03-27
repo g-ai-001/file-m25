@@ -12,6 +12,9 @@ import app.file_m25.domain.usecase.DeleteFileUseCase
 import app.file_m25.domain.usecase.GetFilesUseCase
 import app.file_m25.domain.usecase.GetStorageInfoUseCase
 import app.file_m25.domain.usecase.RenameFileUseCase
+import app.file_m25.domain.usecase.SearchFilesUseCase
+import app.file_m25.domain.usecase.CopyFileUseCase
+import app.file_m25.domain.usecase.MoveFileUseCase
 import app.file_m25.util.Logger
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,7 +36,17 @@ data class HomeUiState(
     val selectedFile: FileItem? = null,
     val showCreateFolderDialog: Boolean = false,
     val showRenameDialog: Boolean = false,
-    val showDeleteDialog: Boolean = false
+    val showDeleteDialog: Boolean = false,
+    val isSearchMode: Boolean = false,
+    val searchQuery: String = "",
+    val searchResults: List<FileItem> = emptyList(),
+    val isSearching: Boolean = false,
+    val selectedFiles: Set<FileItem> = emptySet(),
+    val isMultiSelectMode: Boolean = false,
+    val showCopyDialog: Boolean = false,
+    val showMoveDialog: Boolean = false,
+    val operationSourcePath: String? = null,
+    val showFileInfoDialog: Boolean = false
 )
 
 @HiltViewModel
@@ -42,7 +55,10 @@ class HomeViewModel @Inject constructor(
     private val createFolderUseCase: CreateFolderUseCase,
     private val deleteFileUseCase: DeleteFileUseCase,
     private val renameFileUseCase: RenameFileUseCase,
-    private val getStorageInfoUseCase: GetStorageInfoUseCase
+    private val getStorageInfoUseCase: GetStorageInfoUseCase,
+    private val searchFilesUseCase: SearchFilesUseCase,
+    private val copyFileUseCase: CopyFileUseCase,
+    private val moveFileUseCase: MoveFileUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -160,6 +176,118 @@ class HomeViewModel @Inject constructor(
                 loadStorageInfo()
             }.onFailure { e ->
                 Logger.e("HomeViewModel", "Failed to delete file", e)
+            }
+        }
+    }
+
+    fun enterSearchMode() {
+        _uiState.update { it.copy(isSearchMode = true) }
+    }
+
+    fun exitSearchMode() {
+        _uiState.update { it.copy(isSearchMode = false, searchQuery = "", searchResults = emptyList()) }
+    }
+
+    fun setSearchQuery(query: String) {
+        _uiState.update { it.copy(searchQuery = query) }
+        if (query.isNotBlank()) {
+            searchFiles(query)
+        } else {
+            _uiState.update { it.copy(searchResults = emptyList(), isSearching = false) }
+        }
+    }
+
+    private fun searchFiles(query: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSearching = true) }
+            searchFilesUseCase(query, _uiState.value.currentPath)
+                .catch { e ->
+                    Logger.e("HomeViewModel", "Search failed", e)
+                    _uiState.update { it.copy(isSearching = false) }
+                }
+                .collect { results ->
+                    _uiState.update { it.copy(searchResults = results, isSearching = false) }
+                }
+        }
+    }
+
+    fun toggleMultiSelectMode() {
+        _uiState.update {
+            it.copy(
+                isMultiSelectMode = !it.isMultiSelectMode,
+                selectedFiles = if (it.isMultiSelectMode) emptySet() else it.selectedFiles
+            )
+        }
+    }
+
+    fun toggleFileSelection(file: FileItem) {
+        _uiState.update { state ->
+            val newSelection = if (state.selectedFiles.contains(file)) {
+                state.selectedFiles - file
+            } else {
+                state.selectedFiles + file
+            }
+            state.copy(selectedFiles = newSelection)
+        }
+    }
+
+    fun clearSelection() {
+        _uiState.update { it.copy(selectedFiles = emptySet(), isMultiSelectMode = false) }
+    }
+
+    fun showFileInfoDialog() {
+        _uiState.update { it.copy(showFileInfoDialog = true) }
+    }
+
+    fun hideFileInfoDialog() {
+        _uiState.update { it.copy(showFileInfoDialog = false) }
+    }
+
+    fun showCopyDialog(file: FileItem? = null) {
+        val path = file?.path ?: _uiState.value.selectedFile?.path ?: return
+        _uiState.update { it.copy(showCopyDialog = true, operationSourcePath = path) }
+    }
+
+    fun hideCopyDialog() {
+        _uiState.update { it.copy(showCopyDialog = false, operationSourcePath = null) }
+    }
+
+    fun showMoveDialog(file: FileItem? = null) {
+        val path = file?.path ?: _uiState.value.selectedFile?.path ?: return
+        _uiState.update { it.copy(showMoveDialog = true, operationSourcePath = path) }
+    }
+
+    fun hideMoveDialog() {
+        _uiState.update { it.copy(showMoveDialog = false, operationSourcePath = null) }
+    }
+
+    fun copyFile(destFolder: String) {
+        val sourcePath = _uiState.value.operationSourcePath ?: return
+        viewModelScope.launch {
+            val result = copyFileUseCase(sourcePath, destFolder)
+            result.onSuccess {
+                Logger.i("HomeViewModel", "File copied to: $destFolder")
+                hideCopyDialog()
+                selectFile(null)
+                loadFiles()
+            }.onFailure { e ->
+                Logger.e("HomeViewModel", "Failed to copy file", e)
+            }
+        }
+    }
+
+    fun moveFile(destFolder: String) {
+        val sourcePath = _uiState.value.operationSourcePath ?: return
+        viewModelScope.launch {
+            val result = moveFileUseCase(sourcePath, destFolder)
+            result.onSuccess {
+                Logger.i("HomeViewModel", "File moved to: $destFolder")
+                hideMoveDialog()
+                selectFile(null)
+                loadFiles()
+                loadStorageInfo()
+            }.onFailure { e ->
+                Logger.e("HomeViewModel", "Failed to move file", e)
             }
         }
     }

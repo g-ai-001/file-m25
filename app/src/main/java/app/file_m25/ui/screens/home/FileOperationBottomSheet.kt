@@ -6,8 +6,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.MoveUp
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -23,7 +26,10 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun FileOperationBottomSheet(
     fileName: String,
+    onInfo: () -> Unit,
     onRename: () -> Unit,
+    onCopy: () -> Unit,
+    onMove: () -> Unit,
     onDelete: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -50,7 +56,21 @@ fun FileOperationBottomSheet(
                     .padding(horizontal = 8.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                TextButton(onClick = onRename) {
+                TextButton(onClick = {
+                    onInfo()
+                    onDismiss()
+                }) {
+                    Icon(
+                        Icons.Default.Info,
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                    Text("详情")
+                }
+                TextButton(onClick = {
+                    onRename()
+                    onDismiss()
+                }) {
                     Icon(
                         Icons.Default.Edit,
                         contentDescription = null,
@@ -58,7 +78,40 @@ fun FileOperationBottomSheet(
                     )
                     Text("重命名")
                 }
-                TextButton(onClick = onDelete) {
+                TextButton(onClick = {
+                    onCopy()
+                    onDismiss()
+                }) {
+                    Icon(
+                        Icons.Default.ContentCopy,
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                    Text("复制")
+                }
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                TextButton(onClick = {
+                    onMove()
+                    onDismiss()
+                }) {
+                    Icon(
+                        Icons.Default.MoveUp,
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                    Text("移动")
+                }
+                TextButton(onClick = {
+                    onDelete()
+                    onDismiss()
+                }) {
                     Icon(
                         Icons.Default.Delete,
                         contentDescription = null,
