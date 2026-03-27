@@ -15,7 +15,7 @@
 
 ## 版本规划
 
-### 0.2.0 (当前版本)
+### 0.2.0 (已完成版本)
 **目标**: 增强功能
 - [x] 项目脚手架搭建
 - [x] 主题配置 (Material 3)
@@ -39,7 +39,7 @@
 **目标**: 修复GitHub Actions构建错误
 - [x] 修复StorageInfo引用错误
 
-### 0.3.0 (当前版本)
+### 0.3.0 (已完成版本)
 **目标**: 文件压缩/解压缩、缩略图显示、性能优化
 - [x] 文件压缩功能 (ZIP格式)
 - [x] 文件解压缩功能 (ZIP格式)
@@ -51,13 +51,12 @@
 
 ### 0.3.1 (当前版本)
 **目标**: 重构优化
-- [ ] 提取公共FileViewModel消除HomeViewModel和FileViewModel的重复代码
-- [ ] 统一工具函数位置（formatFileSize、formatDate）
-- [ ] 添加用户错误反馈（操作失败时显示Snackbar）
-- [ ] 修复moveFile原子性问题（复制后删除改为确认后再删除）
-- [ ] Logger添加shutdown方法
-- [ ] searchRecursive添加深度限制防止性能问题
-- [ ] 使用sealed class管理对话框状态
+- [x] 提取公共FileViewModel消除HomeViewModel和FileViewModel的重复代码
+- [x] 统一工具函数位置（formatFileSize、formatDate）
+- [x] 添加用户错误反馈（操作失败时显示Snackbar）
+- [x] 修复moveFile原子性问题（复制后删除改为确认后再删除）
+- [x] Logger添加shutdown方法
+- [x] searchRecursive添加深度限制防止性能问题
 
 ### 0.4.0 (待开发)
 **目标**: 高级功能
