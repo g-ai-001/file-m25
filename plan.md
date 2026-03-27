@@ -71,7 +71,12 @@
 - [x] 移除RepositoryModule中多余的FavoriteRepository绑定
 
 ### 0.4.2 (当前版本)
-**目标**: 等待CI验证
+**目标**: 修复GitHub Actions构建错误
+- [x] 修复FileScreen.kt编译错误（缺少onToggleFavorite参数）
+- [x] FileViewModel添加toggleFavorite方法和FavoriteRepository依赖
+- [x] 移除RepositoryModule中多余的FavoriteRepository绑定
+
+### 0.5.0 (待开发)
 **目标**: 高级功能
 - [ ] 文件分享功能
 - [ ] 最近打开文件列表
