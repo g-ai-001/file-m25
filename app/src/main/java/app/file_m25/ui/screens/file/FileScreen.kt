@@ -70,6 +70,7 @@ import app.file_m25.ui.components.DestinationPickerDialog
 import app.file_m25.ui.screens.home.FileOperationBottomSheet
 import app.file_m25.util.formatDate
 import app.file_m25.util.formatFileSize
+import app.file_m25.util.getSortModeLabel
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -323,20 +324,7 @@ private fun NormalModeScaffold(
                                     },
                                     onLongClick = {
                                         viewModel.selectFile(file)
-                                    },
-                                    modifier = Modifier.combinedClickable(
-                                        onClick = {
-                                            if (file.isDirectory) {
-                                                onNavigateToFile(file.path)
-                                            } else {
-                                                viewModel.selectFile(file)
-                                                viewModel.addToRecent(file)
-                                            }
-                                        },
-                                        onLongClick = {
-                                            viewModel.selectFile(file)
-                                        }
-                                    )
+                                    }
                                 )
                             }
                         }
@@ -416,11 +404,8 @@ private fun SearchModeScaffold(
                             FileListItem(
                                 file = file,
                                 onClick = { onFileClick(file) },
-                                onLongClick = { },
-                                modifier = Modifier.combinedClickable(
-                                    onClick = { onFileClick(file) },
-                                    onLongClick = { }
-                                )
+                                onLongClick = { }
+                            )
                             )
                         }
                     }
@@ -509,13 +494,4 @@ private fun MultiSelectModeScaffold(
     }
 }
 
-private fun getSortModeLabel(mode: SortMode): String {
-    return when (mode) {
-        SortMode.NAME_ASC -> "名称升序"
-        SortMode.NAME_DESC -> "名称降序"
-        SortMode.SIZE_ASC -> "大小升序"
-        SortMode.SIZE_DESC -> "大小降序"
-        SortMode.DATE_ASC -> "日期升序"
-        SortMode.DATE_DESC -> "日期降序"
-    }
 }
