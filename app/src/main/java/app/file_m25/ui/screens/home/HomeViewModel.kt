@@ -3,6 +3,7 @@ package app.file_m25.ui.screens.home
 import android.os.Environment
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.file_m25.data.repository.FavoriteRepository
 import app.file_m25.domain.model.FileItem
 import app.file_m25.domain.model.SortMode
 import app.file_m25.domain.model.ViewMode
@@ -54,7 +55,9 @@ data class HomeUiState(
     val showExtractDialog: Boolean = false,
     val isCompressing: Boolean = false,
     val isExtracting: Boolean = false,
-    val snackbarMessage: String? = null
+    val snackbarMessage: String? = null,
+    val favoritePaths: Set<String> = emptySet(),
+    val showFavorites: Boolean = false
 )
 
 @HiltViewModel
@@ -68,15 +71,28 @@ class HomeViewModel @Inject constructor(
     private val copyFileUseCase: CopyFileUseCase,
     private val moveFileUseCase: MoveFileUseCase,
     private val compressFilesUseCase: CompressFilesUseCase,
-    private val extractZipUseCase: ExtractZipUseCase
+    private val extractZipUseCase: ExtractZipUseCase,
+    private val favoriteRepository: FavoriteRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
+    private var favoritesJob: kotlinx.coroutines.Job? = null
+
     init {
         loadFiles()
         loadStorageInfo()
+        observeFavorites()
+    }
+
+    private fun observeFavorites() {
+        favoritesJob?.cancel()
+        favoritesJob = viewModelScope.launch {
+            favoriteRepository.getAllFavorites().collect { favorites ->
+                _uiState.update { it.copy(favoritePaths = favorites.map { f -> f.path }.toSet()) }
+            }
+        }
     }
 
     fun loadFiles() {
@@ -366,6 +382,46 @@ class HomeViewModel @Inject constructor(
                 showError("解压失败: ${e.message}")
             }
             _uiState.update { it.copy(isExtracting = false) }
+        }
+    }
+
+    fun toggleFavorite(file: FileItem) {
+        viewModelScope.launch {
+            if (_uiState.value.favoritePaths.contains(file.path)) {
+                favoriteRepository.removeFavorite(file.path)
+                Logger.i("HomeViewModel", "Removed from favorites: ${file.name}")
+            } else {
+                favoriteRepository.addFavorite(file)
+                Logger.i("HomeViewModel", "Added to favorites: ${file.name}")
+            }
+        }
+    }
+
+    fun isFavorite(path: String): Boolean {
+        return _uiState.value.favoritePaths.contains(path)
+    }
+
+    fun enterFavoritesMode() {
+        _uiState.update { it.copy(showFavorites = true) }
+        loadFavorites()
+    }
+
+    fun exitFavoritesMode() {
+        _uiState.update { it.copy(showFavorites = false) }
+        loadFiles()
+    }
+
+    private fun loadFavorites() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            favoriteRepository.getAllFavorites()
+                .catch { e ->
+                    Logger.e("HomeViewModel", "Failed to load favorites", e)
+                    _uiState.update { it.copy(isLoading = false, error = e.message) }
+                }
+                .collect { favorites ->
+                    _uiState.update { it.copy(isLoading = false, files = favorites) }
+                }
         }
     }
 }

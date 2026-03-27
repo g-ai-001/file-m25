@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.MoveUp
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Checkbox
@@ -92,46 +93,62 @@ fun HomeScreen(
         }
     }
 
-    if (uiState.isMultiSelectMode) {
-        MultiSelectModeScaffold(
-            uiState = uiState,
-            onBack = { viewModel.clearSelection() },
-            onSelectAll = { /* TODO */ },
-            onDelete = { viewModel.showDeleteDialog() },
-            onCopy = { viewModel.showCopyDialog() },
-            onMove = { viewModel.showMoveDialog() }
-        )
-    } else if (uiState.isSearchMode) {
-        SearchModeScaffold(
-            uiState = uiState,
-            onBack = { viewModel.exitSearchMode() },
-            onSearchQueryChange = { viewModel.setSearchQuery(it) },
-            onFileClick = { file ->
-                if (file.isDirectory) {
-                    viewModel.exitSearchMode()
-                    onNavigateToFile(file.path)
-                } else {
-                    viewModel.selectFile(file)
+    when {
+        uiState.isMultiSelectMode -> {
+            MultiSelectModeScaffold(
+                uiState = uiState,
+                onBack = { viewModel.clearSelection() },
+                onSelectAll = { /* TODO */ },
+                onDelete = { viewModel.showDeleteDialog() },
+                onCopy = { viewModel.showCopyDialog() },
+                onMove = { viewModel.showMoveDialog() }
+            )
+        }
+        uiState.isSearchMode -> {
+            SearchModeScaffold(
+                uiState = uiState,
+                onBack = { viewModel.exitSearchMode() },
+                onSearchQueryChange = { viewModel.setSearchQuery(it) },
+                onFileClick = { file ->
+                    if (file.isDirectory) {
+                        viewModel.exitSearchMode()
+                        onNavigateToFile(file.path)
+                    } else {
+                        viewModel.selectFile(file)
+                    }
                 }
-            }
-        )
-    } else {
-        NormalModeScaffold(
-            uiState = uiState,
-            showSortMenu = showSortMenu,
-            onShowSortMenu = { showSortMenu = true },
-            onHideSortMenu = { showSortMenu = false },
-            onNavigateToFile = onNavigateToFile,
-            onNavigateToSettings = onNavigateToSettings,
-            viewModel = viewModel,
-            snackbarHostState = snackbarHostState
-        )
+            )
+        }
+        uiState.showFavorites -> {
+            FavoritesModeScaffold(
+                uiState = uiState,
+                onBack = { viewModel.exitFavoritesMode() },
+                onNavigateToFile = onNavigateToFile,
+                onNavigateToSettings = onNavigateToSettings,
+                viewModel = viewModel,
+                snackbarHostState = snackbarHostState
+            )
+        }
+        else -> {
+            NormalModeScaffold(
+                uiState = uiState,
+                showSortMenu = showSortMenu,
+                onShowSortMenu = { showSortMenu = true },
+                onHideSortMenu = { showSortMenu = false },
+                onNavigateToFile = onNavigateToFile,
+                onNavigateToSettings = onNavigateToSettings,
+                onEnterFavorites = { viewModel.enterFavoritesMode() },
+                viewModel = viewModel,
+                snackbarHostState = snackbarHostState
+            )
+        }
     }
 
     uiState.selectedFile?.let { file ->
         FileOperationBottomSheet(
             fileName = file.name,
             isZipFile = file.extension.lowercase() == "zip",
+            isFavorite = viewModel.isFavorite(file.path),
             onInfo = { viewModel.showFileInfoDialog() },
             onRename = { viewModel.showRenameDialog() },
             onCopy = { viewModel.showCopyDialog() },
@@ -139,6 +156,7 @@ fun HomeScreen(
             onDelete = { viewModel.showDeleteDialog() },
             onCompress = { viewModel.showCompressDialog() },
             onExtract = { viewModel.showExtractDialog() },
+            onToggleFavorite = { viewModel.toggleFavorite(file) },
             onDismiss = { viewModel.selectFile(null) }
         )
     }
@@ -228,6 +246,7 @@ private fun NormalModeScaffold(
     onHideSortMenu: () -> Unit,
     onNavigateToFile: (String) -> Unit,
     onNavigateToSettings: () -> Unit,
+    onEnterFavorites: () -> Unit,
     viewModel: HomeViewModel,
     snackbarHostState: SnackbarHostState
 ) {
@@ -238,6 +257,9 @@ private fun NormalModeScaffold(
                 actions = {
                     IconButton(onClick = { viewModel.enterSearchMode() }) {
                         Icon(Icons.Default.Search, contentDescription = "搜索")
+                    }
+                    IconButton(onClick = onEnterFavorites) {
+                        Icon(Icons.Default.Star, contentDescription = "收藏")
                     }
                     IconButton(onClick = onShowSortMenu) {
                         Icon(Icons.Default.Sort, contentDescription = "排序")
@@ -358,6 +380,82 @@ private fun NormalModeScaffold(
                                     }
                                 )
                             }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FavoritesModeScaffold(
+    uiState: HomeUiState,
+    onBack: () -> Unit,
+    onNavigateToFile: (String) -> Unit,
+    onNavigateToSettings: () -> Unit,
+    viewModel: HomeViewModel,
+    snackbarHostState: SnackbarHostState
+) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("收藏") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onNavigateToSettings) {
+                        Icon(Icons.Default.Settings, contentDescription = "设置")
+                    }
+                }
+            )
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            when {
+                uiState.isLoading -> LoadingIndicator()
+                uiState.error != null -> EmptyState(message = uiState.error ?: "未知错误")
+                uiState.files.isEmpty() -> EmptyState(message = "暂无收藏")
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 16.dp)
+                    ) {
+                        items(uiState.files, key = { it.path }) { file ->
+                            FileListItem(
+                                file = file,
+                                onClick = {
+                                    if (file.isDirectory) {
+                                        onNavigateToFile(file.path)
+                                    } else {
+                                        viewModel.selectFile(file)
+                                    }
+                                },
+                                onLongClick = {
+                                    viewModel.selectFile(file)
+                                },
+                                modifier = Modifier.combinedClickable(
+                                    onClick = {
+                                        if (file.isDirectory) {
+                                            onNavigateToFile(file.path)
+                                        } else {
+                                            viewModel.selectFile(file)
+                                        }
+                                    },
+                                    onLongClick = {
+                                        viewModel.selectFile(file)
+                                    }
+                                )
+                            )
                         }
                     }
                 }

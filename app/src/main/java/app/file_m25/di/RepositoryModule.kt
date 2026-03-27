@@ -1,5 +1,6 @@
 package app.file_m25.di
 
+import app.file_m25.data.repository.FavoriteRepository
 import app.file_m25.data.repository.FileRepositoryImpl
 import app.file_m25.domain.repository.FileRepository
 import dagger.Binds
@@ -15,4 +16,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindFileRepository(impl: FileRepositoryImpl): FileRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindFavoriteRepository(impl: FavoriteRepository): FavoriteRepository
 }

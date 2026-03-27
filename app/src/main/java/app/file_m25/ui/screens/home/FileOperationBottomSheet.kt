@@ -12,6 +12,8 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoveUp
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material.icons.filled.Unarchive
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -29,6 +31,7 @@ import androidx.compose.ui.unit.dp
 fun FileOperationBottomSheet(
     fileName: String,
     isZipFile: Boolean = false,
+    isFavorite: Boolean = false,
     onInfo: () -> Unit,
     onRename: () -> Unit,
     onCopy: () -> Unit,
@@ -36,6 +39,7 @@ fun FileOperationBottomSheet(
     onDelete: () -> Unit,
     onCompress: () -> Unit,
     onExtract: () -> Unit,
+    onToggleFavorite: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState()
@@ -73,6 +77,17 @@ fun FileOperationBottomSheet(
                     Text("详情")
                 }
                 TextButton(onClick = {
+                    onToggleFavorite()
+                    onDismiss()
+                }) {
+                    Icon(
+                        if (isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                    Text(if (isFavorite) "取消收藏" else "收藏")
+                }
+                TextButton(onClick = {
                     onRename()
                     onDismiss()
                 }) {
@@ -83,6 +98,14 @@ fun FileOperationBottomSheet(
                     )
                     Text("重命名")
                 }
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
                 TextButton(onClick = {
                     onCopy()
                     onDismiss()
@@ -94,14 +117,6 @@ fun FileOperationBottomSheet(
                     )
                     Text("复制")
                 }
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
                 TextButton(onClick = {
                     onMove()
                     onDismiss()
