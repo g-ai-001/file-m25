@@ -32,6 +32,11 @@
 
 ## 版本
 
+### 0.5.2
+- 清理冗余代码并提取共享函数
+- 移除HomeScreen和FileScreen中FileListItem的冗余combinedClickable处理
+- 将getSortModeLabel函数提取到FileUtils.kt共享使用
+
 ### 0.5.1
 - 修复HomeViewModel缺少RecentRepository导入错误
 - 修复GitHub Actions构建失败问题
@@ -41,18 +46,12 @@
 - 添加最近打开文件列表（记录并展示最近打开的文件）
 - 数据库版本升级支持新表
 
-### 0.4.2
-- 修复FileScreen.kt编译错误（缺少onToggleFavorite参数）
-- FileViewModel添加收藏功能支持
-
-### 0.4.1
-- 修复Dagger依赖循环问题
-
-### 0.4.0
+### 0.4.0-0.4.2
 - 添加收藏功能（收藏文件/文件夹）
 - 添加主题自定义（主题颜色选择）
 - 添加动态颜色开关
 - 添加OTA本地APK更新功能
+- 修复编译错误和依赖问题
 
 ### 0.3.0-0.3.1
 - 文件压缩功能（ZIP格式）
