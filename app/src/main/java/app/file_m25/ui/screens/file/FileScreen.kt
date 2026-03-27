@@ -128,6 +128,7 @@ fun FileScreen(
         FileOperationBottomSheet(
             fileName = file.name,
             isZipFile = file.extension.lowercase() == "zip",
+            isFavorite = uiState.isFavorite,
             onInfo = { viewModel.showFileInfoDialog() },
             onRename = { viewModel.showRenameDialog() },
             onCopy = { viewModel.showCopyDialog() },
@@ -135,6 +136,7 @@ fun FileScreen(
             onDelete = { viewModel.showDeleteDialog() },
             onCompress = { },
             onExtract = { },
+            onToggleFavorite = { viewModel.toggleFavorite(file) },
             onDismiss = { viewModel.selectFile(null) }
         )
     }

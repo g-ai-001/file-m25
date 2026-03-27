@@ -3,6 +3,7 @@ package app.file_m25.ui.screens.file
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.file_m25.data.repository.FavoriteRepository
 import app.file_m25.domain.model.FileItem
 import app.file_m25.domain.model.SortMode
 import app.file_m25.domain.model.ViewMode
@@ -42,7 +43,8 @@ data class FileUiState(
     val showMoveDialog: Boolean = false,
     val operationSourcePath: String? = null,
     val showFileInfoDialog: Boolean = false,
-    val snackbarMessage: String? = null
+    val snackbarMessage: String? = null,
+    val isFavorite: Boolean = false
 )
 
 @HiltViewModel
@@ -53,7 +55,8 @@ class FileViewModel @Inject constructor(
     private val deleteFileUseCase: DeleteFileUseCase,
     private val searchFilesUseCase: SearchFilesUseCase,
     private val copyFileUseCase: CopyFileUseCase,
-    private val moveFileUseCase: MoveFileUseCase
+    private val moveFileUseCase: MoveFileUseCase,
+    private val favoriteRepository: FavoriteRepository
 ) : ViewModel() {
 
     private val encodedPath: String = savedStateHandle.get<String>("path") ?: ""
@@ -91,7 +94,8 @@ class FileViewModel @Inject constructor(
     }
 
     fun selectFile(file: FileItem?) {
-        _uiState.update { it.copy(selectedFile = file) }
+        _uiState.update { it.copy(selectedFile = file, isFavorite = false) }
+        file?.let { checkFavoriteStatus(it) }
     }
 
     fun showRenameDialog() {
@@ -261,5 +265,25 @@ class FileViewModel @Inject constructor(
 
     fun clearSnackbarMessage() {
         _uiState.update { it.copy(snackbarMessage = null) }
+    }
+
+    fun toggleFavorite(file: FileItem) {
+        viewModelScope.launch {
+            if (_uiState.value.isFavorite) {
+                favoriteRepository.removeFavorite(file.path)
+                Logger.i("FileViewModel", "Removed from favorites: ${file.name}")
+            } else {
+                favoriteRepository.addFavorite(file)
+                Logger.i("FileViewModel", "Added to favorites: ${file.name}")
+            }
+        }
+    }
+
+    fun checkFavoriteStatus(file: FileItem) {
+        viewModelScope.launch {
+            favoriteRepository.isFavorite(file.path).collect { isFav ->
+                _uiState.update { it.copy(isFavorite = isFav) }
+            }
+        }
     }
 }
