@@ -58,11 +58,16 @@
 - [x] Logger添加shutdown方法
 - [x] searchRecursive添加深度限制防止性能问题
 
-### 0.4.0 (当前版本)
+### 0.4.0 (已完成版本)
 **目标**: 高级功能
 - [x] 标签/收藏功能（收藏文件/文件夹，方便快速访问）
 - [x] 主题自定义（自定义主题颜色）
 - [x] OTA文件更新（本地APK文件更新安装）
+
+### 0.4.1 (当前版本)
+**目标**: 修复GitHub Actions构建错误
+- [x] 修复FileScreen.kt编译错误（缺少onToggleFavorite参数）
+- [x] FileViewModel添加toggleFavorite方法和FavoriteRepository依赖
 
 ### 0.5.0 (待开发)
 **目标**: 高级功能
