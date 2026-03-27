@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Archive
+import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -118,7 +118,7 @@ fun FileOperationBottomSheet(
                     onDismiss()
                 }) {
                     Icon(
-                        Icons.AutoMirrored.Filled.Archive,
+                        Icons.Default.Archive,
                         contentDescription = null,
                         modifier = Modifier.padding(end = 8.dp)
                     )
@@ -130,7 +130,7 @@ fun FileOperationBottomSheet(
                         onDismiss()
                     }) {
                         Icon(
-                            Icons.AutoMirrored.Filled.Unarchive,
+                            Icons.Default.Unarchive,
                             contentDescription = null,
                             modifier = Modifier.padding(end = 8.dp)
                         )

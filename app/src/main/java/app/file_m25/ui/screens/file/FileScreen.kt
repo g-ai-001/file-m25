@@ -114,11 +114,14 @@ fun FileScreen(
     uiState.selectedFile?.let { file ->
         FileOperationBottomSheet(
             fileName = file.name,
+            isZipFile = file.extension.lowercase() == "zip",
             onInfo = { viewModel.showFileInfoDialog() },
             onRename = { viewModel.showRenameDialog() },
             onCopy = { viewModel.showCopyDialog() },
             onMove = { viewModel.showMoveDialog() },
             onDelete = { viewModel.showDeleteDialog() },
+            onCompress = { },
+            onExtract = { },
             onDismiss = { viewModel.selectFile(null) }
         )
     }

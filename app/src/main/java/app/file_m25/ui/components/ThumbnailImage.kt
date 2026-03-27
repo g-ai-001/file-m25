@@ -2,6 +2,7 @@ package app.file_m25.ui.components
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
 import android.media.ThumbnailUtils
 import android.os.Build
@@ -26,14 +27,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import app.file_m25.domain.model.FileItem
 import app.file_m25.util.Logger
-import coil3.ImageLoader
-import coil3.compose.AsyncImage
-import coil3.request.ImageRequest
-import coil3.request.crossfade
 import java.io.File
 
 @Composable
@@ -43,28 +43,32 @@ fun ThumbnailImage(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     var bitmap by remember(file.path) { mutableStateOf<Bitmap?>(null) }
     var isLoading by remember(file.path) { mutableStateOf(true) }
     var loadFailed by remember(file.path) { mutableStateOf(false) }
 
-    DisposableEffect(file.path) {
+    DisposableEffect(file.path, lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_DESTROY) {
+                bitmap?.recycle()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+
         isLoading = true
         loadFailed = false
 
         when {
             file.mimeType.startsWith("image/") -> {
-                loadImageThumbnail(context, file.path) { result ->
-                    bitmap = result
-                    isLoading = false
-                    if (result == null) loadFailed = true
-                }
+                bitmap = loadImageThumbnail(context, file.path)
+                isLoading = false
+                if (bitmap == null) loadFailed = true
             }
             file.mimeType.startsWith("video/") -> {
-                loadVideoThumbnail(context, file.path) { result ->
-                    bitmap = result
-                    isLoading = false
-                    if (result == null) loadFailed = true
-                }
+                bitmap = loadVideoThumbnail(context, file.path)
+                isLoading = false
+                if (bitmap == null) loadFailed = true
             }
             else -> {
                 isLoading = false
@@ -72,7 +76,9 @@ fun ThumbnailImage(
             }
         }
 
-        onDispose { }
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
     Box(
@@ -107,30 +113,21 @@ fun ThumbnailImage(
     }
 }
 
-private fun loadImageThumbnail(context: Context, path: String, callback: (Bitmap?) -> Unit) {
-    try {
-        val imageLoader = ImageLoader(context)
-        val request = ImageRequest.Builder(context)
-            .data(File(path))
-            .size(200, 200)
-            .crossfade(true)
-            .build()
-
-        val result = imageLoader.execute(request)
-        if (result != null) {
-            callback(result.toBitmap())
-        } else {
-            callback(null)
+private fun loadImageThumbnail(context: Context, path: String): Bitmap? {
+    return try {
+        val options = BitmapFactory.Options().apply {
+            inSampleSize = 2
         }
+        BitmapFactory.decodeFile(path, options)
     } catch (e: Exception) {
         Logger.e("ThumbnailImage", "Failed to load image thumbnail", e)
-        callback(null)
+        null
     }
 }
 
-private fun loadVideoThumbnail(context: Context, path: String, callback: (Bitmap?) -> Unit) {
-    try {
-        val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+private fun loadVideoThumbnail(context: Context, path: String): Bitmap? {
+    return try {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             ThumbnailUtils.extractThumbnail(
                 ThumbnailUtils.createVideoThumbnail(File(path), Size(200, 200), null),
                 200, 200
@@ -142,9 +139,8 @@ private fun loadVideoThumbnail(context: Context, path: String, callback: (Bitmap
                 MediaStore.Images.Thumbnails.MINI_KIND
             )
         }
-        callback(bitmap)
     } catch (e: Exception) {
         Logger.e("ThumbnailImage", "Failed to load video thumbnail", e)
-        callback(null)
+        null
     }
 }
