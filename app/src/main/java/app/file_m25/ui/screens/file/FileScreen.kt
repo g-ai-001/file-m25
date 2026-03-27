@@ -406,7 +406,6 @@ private fun SearchModeScaffold(
                                 onClick = { onFileClick(file) },
                                 onLongClick = { }
                             )
-                            )
                         }
                     }
                 }
