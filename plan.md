@@ -76,14 +76,15 @@
 - [x] FileViewModel添加toggleFavorite方法和FavoriteRepository依赖
 - [x] 移除RepositoryModule中多余的FavoriteRepository绑定
 
-### 0.5.0 (开发中版本)
+### 0.5.0 (已完成版本)
 **目标**: 文件分享、最近文件
-- [ ] 文件分享功能（通过系统分享菜单分享文件）
-- [ ] 最近打开文件列表（记录并展示最近打开的文件）
-- [ ] 最近文件DAO和Entity创建
-- [ ] RecentRepository实现
-- [ ] 最近文件UI入口
-- [ ] HomeViewModel添加最近文件模式
+- [x] 文件分享功能（通过系统分享菜单分享文件）
+- [x] 最近打开文件列表（记录并展示最近打开的文件）
+- [x] 最近文件DAO和Entity创建
+- [x] RecentRepository实现
+- [x] 最近文件UI入口
+- [x] HomeViewModel添加最近文件模式
+- [x] FileViewModel同步添加分享和最近文件功能
 
 ## 功能优先级
 1. 基础文件浏览 - P0
