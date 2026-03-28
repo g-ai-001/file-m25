@@ -141,7 +141,8 @@ fun HomeScreen(
                 onSelectAll = { viewModel.selectAllFiles() },
                 onDelete = { viewModel.showDeleteDialog() },
                 onCopy = { viewModel.showCopyDialog() },
-                onMove = { viewModel.showMoveDialog() }
+                onMove = { viewModel.showMoveDialog() },
+                onToggleSelection = { file -> viewModel.toggleFileSelection(file) }
             )
         }
         uiState.isSearchMode -> {
@@ -638,7 +639,8 @@ private fun MultiSelectModeScaffold(
     onSelectAll: () -> Unit,
     onDelete: () -> Unit,
     onCopy: () -> Unit,
-    onMove: () -> Unit
+    onMove: () -> Unit,
+    onToggleSelection: (app.file_m25.domain.model.FileItem) -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -686,21 +688,21 @@ private fun MultiSelectModeScaffold(
                     modifier = Modifier
                         .fillMaxWidth()
                         .combinedClickable(
-                            onClick = { viewModel.toggleFileSelection(file) },
-                            onLongClick = { viewModel.toggleFileSelection(file) }
+                            onClick = { onToggleSelection(file) },
+                            onLongClick = { onToggleSelection(file) }
                         )
                         .padding(horizontal = 16.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Checkbox(
                         checked = uiState.selectedFiles.contains(file),
-                        onCheckedChange = { viewModel.toggleFileSelection(file) }
+                        onCheckedChange = { onToggleSelection(file) }
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     FileListItem(
                         file = file,
-                        onClick = { viewModel.toggleFileSelection(file) },
-                        onLongClick = { viewModel.toggleFileSelection(file) },
+                        onClick = { onToggleSelection(file) },
+                        onLongClick = { onToggleSelection(file) },
                         modifier = Modifier.weight(1f)
                     )
                 }
