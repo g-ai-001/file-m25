@@ -3,6 +3,7 @@ package app.file_m25.ui.screens.file
 import android.content.Intent
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,6 +19,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
@@ -25,6 +28,7 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MoveUp
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Sort
@@ -36,6 +40,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -250,91 +255,107 @@ private fun NormalModeScaffold(
     onNavigateToAudioPreview: (String) -> Unit
 ) {
     val pathParts = path.split("/").filter { it.isNotEmpty() }
+    val scrollState = rememberScrollState()
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        pathParts.forEachIndexed { index, part ->
-                            if (index > 0) {
-                                Text(">", modifier = Modifier.padding(horizontal = 4.dp))
+            Column {
+                TopAppBar(
+                    title = { Text("文件管理器") },
+                    navigationIcon = {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = { viewModel.enterSearchMode() }) {
+                            Icon(Icons.Default.Search, contentDescription = "搜索")
+                        }
+                        Box {
+                            IconButton(onClick = onShowSortMenu) {
+                                Icon(Icons.Default.Sort, contentDescription = "排序")
                             }
-                            TextButton(
-                                onClick = {
-                                    if (index < pathParts.size - 1) {
-                                        val targetPath = pathParts.take(index + 1).joinToString("/")
-                                        onNavigateToFile("/$targetPath")
-                                    }
-                                }
+                            DropdownMenu(
+                                expanded = showSortMenu,
+                                onDismissRequest = onHideSortMenu
                             ) {
-                                Text(
-                                    text = if (index == pathParts.size - 1) part else part,
-                                    color = if (index == pathParts.size - 1) {
-                                        MaterialTheme.colorScheme.onSurface
-                                    } else {
-                                        MaterialTheme.colorScheme.primary
+                                SortMode.entries.forEach { mode ->
+                                    DropdownMenuItem(
+                                        text = { Text(getSortModeLabel(mode)) },
+                                        onClick = {
+                                            viewModel.setSortMode(mode)
+                                            onHideSortMenu()
+                                        },
+                                        leadingIcon = {
+                                            if (uiState.sortMode == mode) {
+                                                Icon(
+                                                    Icons.Default.Sort,
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.primary
+                                                )
+                                            }
+                                        }
+                                    )
+                                }
+                                HorizontalDivider()
+                                DropdownMenuItem(
+                                    text = { Text(if (uiState.showHiddenFiles) "隐藏文件" else "显示文件") },
+                                    onClick = {
+                                        viewModel.setShowHiddenFiles(!uiState.showHiddenFiles)
+                                        onHideSortMenu()
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            if (uiState.showHiddenFiles) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                            contentDescription = null
+                                        )
                                     }
                                 )
                             }
                         }
+                        IconButton(onClick = {
+                            viewModel.setViewMode(
+                                if (uiState.viewMode == ViewMode.LIST) ViewMode.GRID else ViewMode.LIST
+                            )
+                        }) {
+                            Icon(
+                                if (uiState.viewMode == ViewMode.LIST) Icons.Default.GridView else Icons.Default.ViewList,
+                                contentDescription = "视图模式"
+                            )
+                        }
                     }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { viewModel.enterSearchMode() }) {
-                        Icon(Icons.Default.Search, contentDescription = "搜索")
-                    }
-                    IconButton(onClick = onShowSortMenu) {
-                        Icon(Icons.Default.Sort, contentDescription = "排序")
-                    }
-                    DropdownMenu(
-                        expanded = showSortMenu,
-                        onDismissRequest = onHideSortMenu
-                    ) {
-                        SortMode.entries.forEach { mode ->
-                            DropdownMenuItem(
-                                text = { Text(getSortModeLabel(mode)) },
-                                onClick = {
-                                    viewModel.setSortMode(mode)
-                                    onHideSortMenu()
-                                },
-                                leadingIcon = {
-                                    if (uiState.sortMode == mode) {
-                                        Icon(
-                                            Icons.Default.Sort,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-                                    }
+                )
+                // 面包屑导航单独一行，支持横向滚动
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(scrollState)
+                        .padding(horizontal = 16.dp, vertical = 4.dp)
+                ) {
+                    pathParts.forEachIndexed { index, part ->
+                        if (index > 0) {
+                            Text(">", modifier = Modifier.padding(horizontal = 4.dp))
+                        }
+                        TextButton(
+                            onClick = {
+                                if (index < pathParts.size - 1) {
+                                    val targetPath = pathParts.take(index + 1).joinToString("/")
+                                    onNavigateToFile("/$targetPath")
+                                }
+                            }
+                        ) {
+                            Text(
+                                text = part,
+                                color = if (index == pathParts.size - 1) {
+                                    MaterialTheme.colorScheme.onSurface
+                                } else {
+                                    MaterialTheme.colorScheme.primary
                                 }
                             )
                         }
                     }
-                    IconButton(onClick = {
-                        viewModel.setShowHiddenFiles(!uiState.showHiddenFiles)
-                    }) {
-                        Icon(
-                            if (uiState.showHiddenFiles) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                            contentDescription = if (uiState.showHiddenFiles) "隐藏文件" else "显示文件"
-                        )
-                    }
-                    IconButton(onClick = {
-                        viewModel.setViewMode(
-                            if (uiState.viewMode == ViewMode.LIST) ViewMode.GRID else ViewMode.LIST
-                        )
-                    }) {
-                        Icon(
-                            if (uiState.viewMode == ViewMode.LIST) Icons.Default.GridView else Icons.Default.ViewList,
-                            contentDescription = "视图模式"
-                        )
-                    }
                 }
-            )
+            }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
