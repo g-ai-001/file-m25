@@ -125,10 +125,10 @@
 
 ### 0.8.1 (当前版本)
 **目标**: 重构优化
-- [ ] 修复FileViewModel.checkBookmarkStatus内存泄漏问题（collect未取消）
-- [ ] 修复MultiSelectMode.onSelectAll为stub问题（实现全选功能）
-- [ ] 修复MultiSelectMode中checkbox交互无效问题
-- [ ] 审查并优化代码结构
+- [x] 修复FileViewModel.checkBookmarkStatus内存泄漏问题（collect未取消）
+- [x] 修复MultiSelectMode.onSelectAll为stub问题（实现全选功能）
+- [x] 修复MultiSelectMode中checkbox交互无效问题
+- [x] 审查并优化代码结构
 
 ## 功能优先级
 1. 基础文件浏览 - P0
