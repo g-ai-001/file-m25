@@ -104,6 +104,7 @@ fun HomeScreen(
     onNavigateToVideoPreview: (String) -> Unit,
     onNavigateToAudioPreview: (String) -> Unit,
     onNavigateToPdfPreview: (String) -> Unit = {},
+    onNavigateToTextPreview: (String) -> Unit = {},
     onNavigateToTrash: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
@@ -215,7 +216,8 @@ fun HomeScreen(
                 onNavigateToImagePreview = onNavigateToImagePreview,
                 onNavigateToVideoPreview = onNavigateToVideoPreview,
                 onNavigateToAudioPreview = onNavigateToAudioPreview,
-                onNavigateToPdfPreview = onNavigateToPdfPreview
+                onNavigateToPdfPreview = onNavigateToPdfPreview,
+                onNavigateToTextPreview = onNavigateToTextPreview
             )
         }
         uiState.showCategoryMode -> {
@@ -241,6 +243,7 @@ fun HomeScreen(
                 onNavigateToVideoPreview = onNavigateToVideoPreview,
                 onNavigateToAudioPreview = onNavigateToAudioPreview,
                 onNavigateToPdfPreview = onNavigateToPdfPreview,
+                onNavigateToTextPreview = onNavigateToTextPreview,
                 onNavigateToTrash = onNavigateToTrash
             )
         }
@@ -359,6 +362,7 @@ private fun NormalModeScaffold(
     onNavigateToVideoPreview: (String) -> Unit,
     onNavigateToAudioPreview: (String) -> Unit,
     onNavigateToPdfPreview: (String) -> Unit,
+    onNavigateToTextPreview: (String) -> Unit,
     onNavigateToTrash: () -> Unit
 ) {
     var showMoreMenu by remember { mutableStateOf(false) }
@@ -497,6 +501,8 @@ private fun NormalModeScaffold(
                                             onNavigateToAudioPreview(file.path)
                                         } else if (file.extension.lowercase() == "pdf") {
                                             onNavigateToPdfPreview(file.path)
+                                        } else if (file.extension.lowercase() == "txt") {
+                                            onNavigateToTextPreview(file.path)
                                         } else {
                                             viewModel.selectFile(file)
                                             viewModel.addToRecent(file)
@@ -532,6 +538,8 @@ private fun NormalModeScaffold(
                                             onNavigateToAudioPreview(file.path)
                                         } else if (file.extension.lowercase() == "pdf") {
                                             onNavigateToPdfPreview(file.path)
+                                        } else if (file.extension.lowercase() == "txt") {
+                                            onNavigateToTextPreview(file.path)
                                         } else {
                                             viewModel.selectFile(file)
                                             viewModel.addToRecent(file)
@@ -850,7 +858,8 @@ private fun CategoryModeScaffold(
     onNavigateToImagePreview: (List<String>, Int) -> Unit,
     onNavigateToVideoPreview: (String) -> Unit,
     onNavigateToAudioPreview: (String) -> Unit,
-    onNavigateToPdfPreview: (String) -> Unit
+    onNavigateToPdfPreview: (String) -> Unit,
+    onNavigateToTextPreview: (String) -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -900,6 +909,8 @@ private fun CategoryModeScaffold(
                                         onNavigateToAudioPreview(file.path)
                                     } else if (file.extension.lowercase() == "pdf") {
                                         onNavigateToPdfPreview(file.path)
+                                    } else if (file.extension.lowercase() == "txt") {
+                                        onNavigateToTextPreview(file.path)
                                     } else {
                                         viewModel.selectFile(file)
                                     }

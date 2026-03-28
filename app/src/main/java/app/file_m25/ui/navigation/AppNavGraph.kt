@@ -12,6 +12,7 @@ import app.file_m25.ui.screens.home.HomeScreen
 import app.file_m25.ui.screens.imagepreview.ImagePreviewScreen
 import app.file_m25.ui.screens.pdfpreview.PdfPreviewScreen
 import app.file_m25.ui.screens.settings.SettingsScreen
+import app.file_m25.ui.screens.textpreview.TextPreviewScreen
 import app.file_m25.ui.screens.trash.TrashScreen
 import app.file_m25.ui.screens.videopreview.VideoPreviewScreen
 
@@ -142,6 +143,20 @@ fun AppNavGraph(
 
         composable(Screen.Trash.route) {
             TrashScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Screen.TextPreview.route,
+            arguments = listOf(
+                navArgument("path") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val encodedPath = backStackEntry.arguments?.getString("path") ?: ""
+            val path = encodedPath.decodeUrl()
+            TextPreviewScreen(
+                textPath = path,
                 onNavigateBack = { navController.popBackStack() }
             )
         }

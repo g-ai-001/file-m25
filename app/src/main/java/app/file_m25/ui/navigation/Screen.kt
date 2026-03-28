@@ -22,6 +22,9 @@ sealed class Screen(val route: String) {
         fun createRoute(path: String) = "pdf_preview/${path.encodeUrl()}"
     }
     data object Trash : Screen("trash")
+    data object TextPreview : Screen("text_preview/{path}") {
+        fun createRoute(path: String) = "text_preview/${path.encodeUrl()}"
+    }
 }
 
 fun String.encodeUrl(): String = java.net.URLEncoder.encode(this, "UTF-8")

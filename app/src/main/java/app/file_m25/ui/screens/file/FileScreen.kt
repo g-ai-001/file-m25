@@ -91,6 +91,7 @@ fun FileScreen(
     onNavigateToVideoPreview: (String) -> Unit,
     onNavigateToAudioPreview: (String) -> Unit,
     onNavigateToPdfPreview: (String) -> Unit = {},
+    onNavigateToTextPreview: (String) -> Unit = {},
     viewModel: FileViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -166,7 +167,8 @@ fun FileScreen(
             onNavigateToImagePreview = onNavigateToImagePreview,
             onNavigateToVideoPreview = onNavigateToVideoPreview,
             onNavigateToAudioPreview = onNavigateToAudioPreview,
-            onNavigateToPdfPreview = onNavigateToPdfPreview
+            onNavigateToPdfPreview = onNavigateToPdfPreview,
+            onNavigateToTextPreview = onNavigateToTextPreview
         )
     }
 
@@ -256,7 +258,8 @@ private fun NormalModeScaffold(
     onNavigateToImagePreview: (List<String>, Int) -> Unit,
     onNavigateToVideoPreview: (String) -> Unit,
     onNavigateToAudioPreview: (String) -> Unit,
-    onNavigateToPdfPreview: (String) -> Unit
+    onNavigateToPdfPreview: (String) -> Unit,
+    onNavigateToTextPreview: (String) -> Unit
 ) {
     val pathParts = path.split("/").filter { it.isNotEmpty() }
     val scrollState = rememberScrollState()
@@ -394,6 +397,8 @@ private fun NormalModeScaffold(
                                             onNavigateToAudioPreview(file.path)
                                         } else if (file.extension.lowercase() == "pdf") {
                                             onNavigateToPdfPreview(file.path)
+                                        } else if (file.extension.lowercase() == "txt") {
+                                            onNavigateToTextPreview(file.path)
                                         } else {
                                             viewModel.selectFile(file)
                                             viewModel.addToRecent(file)
@@ -429,6 +434,8 @@ private fun NormalModeScaffold(
                                             onNavigateToAudioPreview(file.path)
                                         } else if (file.extension.lowercase() == "pdf") {
                                             onNavigateToPdfPreview(file.path)
+                                        } else if (file.extension.lowercase() == "txt") {
+                                            onNavigateToTextPreview(file.path)
                                         } else {
                                             viewModel.selectFile(file)
                                             viewModel.addToRecent(file)
