@@ -133,7 +133,7 @@ fun TrashScreen(
         AlertDialog(
             onDismissRequest = { viewModel.hideRestoreDialog() },
             title = { Text("恢复文件") },
-            text = { Text("确定要恢复 "${uiState.selectedFile?.name}" 到原位置吗？") },
+            text = { Text("确定要恢复 ${uiState.selectedFile?.name} 到原位置吗？") },
             confirmButton = {
                 TextButton(onClick = { viewModel.restoreFile() }) {
                     Text("恢复")
