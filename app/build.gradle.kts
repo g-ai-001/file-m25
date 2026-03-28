@@ -98,7 +98,6 @@ dependencies {
     implementation(libs.material3.window.size)
     implementation(libs.glance.appwidget)
     implementation(libs.glance.material3)
-    implementation(libs.pdfium.android)
 
     debugImplementation(libs.androidx.ui.tooling)
 }

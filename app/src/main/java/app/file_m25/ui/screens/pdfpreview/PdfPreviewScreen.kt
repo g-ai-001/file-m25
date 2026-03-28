@@ -18,11 +18,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Share
@@ -56,8 +53,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
-import com.shockwave.pdfium.PdfDocument
-import com.shockwave.pdfium.PdfiumCore
+import androidx.core.graphics.createBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -76,17 +72,15 @@ fun PdfPreviewScreen(
     var scale by remember { mutableFloatStateOf(1f) }
     var showPageList by remember { mutableStateOf(false) }
 
-    val pdfiumCore = remember { PdfiumCore(context) }
-    var pdfDocument by remember { mutableStateOf<PdfDocument?>(null) }
+    var pdfRenderer by remember { mutableStateOf<PdfRenderer?>(null) }
     var pageBitmaps by remember { mutableStateOf<List<Bitmap>>(emptyList()) }
 
     DisposableEffect(pdfPath) {
         try {
             val file = File(pdfPath)
             val fd = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
-            pdfDocument = pdfiumCore.newDocument(fd)
-            pageCount = pdfiumCore.getPageCount(pdfDocument!!)
-
+            pdfRenderer = PdfRenderer(fd)
+            pageCount = pdfRenderer!!.pageCount
             isLoading = false
         } catch (e: Exception) {
             error = e.message
@@ -95,16 +89,16 @@ fun PdfPreviewScreen(
 
         onDispose {
             try {
-                pdfDocument?.close()
+                pdfRenderer?.close()
             } catch (_: Exception) { }
         }
     }
 
-    LaunchedEffect(pdfDocument, currentPage, scale) {
-        if (pdfDocument != null && pageCount > 0) {
+    LaunchedEffect(pdfRenderer, currentPage, scale) {
+        if (pdfRenderer != null && pageCount > 0) {
             withContext(Dispatchers.IO) {
                 try {
-                    val bitmap = renderPage(pdfiumCore, pdfDocument!!, currentPage, scale)
+                    val bitmap = renderPage(pdfRenderer!!, currentPage, scale)
                     pageBitmaps = listOf(bitmap)
                 } catch (_: Exception) { }
             }
@@ -194,8 +188,6 @@ fun PdfPreviewScreen(
                         pageCount = pageCount,
                         currentPage = currentPage,
                         pageBitmaps = pageBitmaps,
-                        pdfDocument = pdfDocument,
-                        pdfiumCore = pdfiumCore,
                         scale = scale,
                         onPageSelect = { page ->
                             currentPage = page
@@ -275,8 +267,6 @@ private fun PageListView(
     pageCount: Int,
     currentPage: Int,
     pageBitmaps: List<Bitmap>,
-    pdfDocument: PdfDocument?,
-    pdfiumCore: PdfiumCore,
     scale: Float,
     onPageSelect: (Int) -> Unit,
     onScaleChange: (Float) -> Unit,
@@ -361,7 +351,7 @@ private fun PageListView(
                             )
                         }
                     }
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.size(8.dp))
                     Text(
                         text = if (page == currentPage) "当前" else "点击查看",
                         color = Color.Gray,
@@ -374,15 +364,15 @@ private fun PageListView(
 }
 
 private suspend fun renderPage(
-    pdfiumCore: PdfiumCore,
-    document: PdfDocument,
+    pdfRenderer: PdfRenderer,
     pageIndex: Int,
     scale: Float
 ): Bitmap = withContext(Dispatchers.IO) {
-    val page = pdfiumCore.getPage(document, pageIndex)
+    val page = pdfRenderer.openPage(pageIndex)
     val width = (page.width * scale).toInt()
     val height = (page.height * scale).toInt()
-    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-    pdfiumCore.renderPage(document, page, bitmap, width, height, 0, 0)
+    val bitmap = createBitmap(width, height)
+    page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+    page.close()
     bitmap
 }
