@@ -34,6 +34,8 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.ViewList
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
@@ -332,6 +334,14 @@ private fun NormalModeScaffold(
                                 }
                             )
                         }
+                    }
+                    IconButton(onClick = {
+                        viewModel.setShowHiddenFiles(!uiState.showHiddenFiles)
+                    }) {
+                        Icon(
+                            if (uiState.showHiddenFiles) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                            contentDescription = if (uiState.showHiddenFiles) "隐藏文件" else "显示文件"
+                        )
                     }
                     IconButton(onClick = {
                         viewModel.setViewMode(

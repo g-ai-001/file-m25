@@ -4,6 +4,7 @@ import android.os.Environment
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.file_m25.data.repository.FavoriteRepository
+import app.file_m25.data.repository.PreferencesRepository
 import app.file_m25.data.repository.RecentRepository
 import app.file_m25.domain.model.FileItem
 import app.file_m25.domain.model.SortMode
@@ -39,6 +40,7 @@ data class HomeUiState(
     val error: String? = null,
     val sortMode: SortMode = SortMode.NAME_ASC,
     val viewMode: ViewMode = ViewMode.LIST,
+    val showHiddenFiles: Boolean = false,
     val storageInfo: StorageInfo? = null,
     val selectedFile: FileItem? = null,
     val showCreateFolderDialog: Boolean = false,
@@ -62,7 +64,9 @@ data class HomeUiState(
     val favoritePaths: Set<String> = emptySet(),
     val showFavorites: Boolean = false,
     val showRecent: Boolean = false,
-    val shareFilePath: String? = null
+    val shareFilePath: String? = null,
+    val bookmarkPaths: Set<String> = emptySet(),
+    val showBookmarks: Boolean = false
 )
 
 @HiltViewModel
@@ -78,7 +82,8 @@ class HomeViewModel @Inject constructor(
     private val compressFilesUseCase: CompressFilesUseCase,
     private val extractZipUseCase: ExtractZipUseCase,
     private val favoriteRepository: FavoriteRepository,
-    private val recentRepository: RecentRepository
+    private val recentRepository: RecentRepository,
+    private val preferencesRepository: PreferencesRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -90,6 +95,17 @@ class HomeViewModel @Inject constructor(
         loadFiles()
         loadStorageInfo()
         observeFavorites()
+        observeShowHiddenFiles()
+        observeBookmarks()
+    }
+
+    private fun observeShowHiddenFiles() {
+        viewModelScope.launch {
+            preferencesRepository.showHiddenFiles.collect { show ->
+                _uiState.update { it.copy(showHiddenFiles = show) }
+                loadFiles()
+            }
+        }
     }
 
     private fun observeFavorites() {
@@ -101,10 +117,19 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    private fun observeBookmarks() {
+        viewModelScope.launch {
+            preferencesRepository.bookmarks.collect { bookmarks ->
+                _uiState.update { it.copy(bookmarkPaths = bookmarks) }
+            }
+        }
+    }
+
     fun loadFiles() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
-            getFilesUseCase(_uiState.value.currentPath, _uiState.value.sortMode)
+            val showHidden = _uiState.value.showHiddenFiles
+            getFilesUseCase(_uiState.value.currentPath, _uiState.value.sortMode, showHidden)
                 .catch { e ->
                     Logger.e("HomeViewModel", "Failed to load files", e)
                     _uiState.update { it.copy(isLoading = false, error = e.message) }
@@ -138,6 +163,12 @@ class HomeViewModel @Inject constructor(
 
     fun setViewMode(mode: ViewMode) {
         _uiState.update { it.copy(viewMode = mode) }
+    }
+
+    fun setShowHiddenFiles(show: Boolean) {
+        viewModelScope.launch {
+            preferencesRepository.setShowHiddenFiles(show)
+        }
     }
 
     fun selectFile(file: FileItem?) {
@@ -405,6 +436,44 @@ class HomeViewModel @Inject constructor(
 
     fun isFavorite(path: String): Boolean {
         return _uiState.value.favoritePaths.contains(path)
+    }
+
+    fun toggleBookmark(file: FileItem) {
+        viewModelScope.launch {
+            if (_uiState.value.bookmarkPaths.contains(file.path)) {
+                preferencesRepository.removeBookmark(file.path)
+                Logger.i("HomeViewModel", "Removed bookmark: ${file.name}")
+            } else {
+                preferencesRepository.addBookmark(file.path)
+                Logger.i("HomeViewModel", "Added bookmark: ${file.name}")
+            }
+        }
+    }
+
+    fun isBookmarked(path: String): Boolean {
+        return _uiState.value.bookmarkPaths.contains(path)
+    }
+
+    fun enterBookmarksMode() {
+        _uiState.update { it.copy(showBookmarks = true) }
+        loadBookmarks()
+    }
+
+    fun exitBookmarksMode() {
+        _uiState.update { it.copy(showBookmarks = false) }
+        loadFiles()
+    }
+
+    private fun loadBookmarks() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            val bookmarkPaths = _uiState.value.bookmarkPaths
+            val files = bookmarkPaths.mapNotNull { path ->
+                val file = File(path)
+                if (file.exists()) FileItem.fromFile(file) else null
+            }
+            _uiState.update { it.copy(isLoading = false, files = files) }
+        }
     }
 
     fun enterFavoritesMode() {

@@ -22,23 +22,26 @@ import javax.inject.Singleton
 @Singleton
 class FileRepositoryImpl @Inject constructor() : FileRepository {
 
-    override fun getFiles(path: String): Flow<List<FileItem>> = flow {
+    override fun getFiles(path: String, showHiddenFiles: Boolean): Flow<List<FileItem>> = flow {
         val directory = File(path)
         if (!directory.exists() || !directory.isDirectory) {
             emit(emptyList())
             return@flow
         }
-        val files = directory.listFiles()?.map { FileItem.fromFile(it) } ?: emptyList()
+        var files = directory.listFiles()?.map { FileItem.fromFile(it) } ?: emptyList()
+        if (!showHiddenFiles) {
+            files = files.filter { !it.name.startsWith(".") }
+        }
         emit(files)
     }
 
-    override fun searchFiles(query: String, searchPath: String): Flow<List<FileItem>> = flow {
+    override fun searchFiles(query: String, searchPath: String, showHiddenFiles: Boolean): Flow<List<FileItem>> = flow {
         if (query.isBlank()) {
             emit(emptyList())
             return@flow
         }
         val results = mutableListOf<FileItem>()
-        searchRecursive(File(searchPath), query, results, maxResults = 100, maxDepth = 10, currentDepth = 0)
+        searchRecursive(File(searchPath), query, results, maxResults = 100, maxDepth = 10, currentDepth = 0, showHiddenFiles)
         emit(results)
     }
 
@@ -48,17 +51,19 @@ class FileRepositoryImpl @Inject constructor() : FileRepository {
         results: MutableList<FileItem>,
         maxResults: Int,
         maxDepth: Int,
-        currentDepth: Int
+        currentDepth: Int,
+        showHiddenFiles: Boolean
     ) {
         if (currentDepth >= maxDepth || results.size >= maxResults) return
         val files = dir.listFiles() ?: return
         for (file in files) {
             if (results.size >= maxResults) break
+            if (!showHiddenFiles && file.name.startsWith(".")) continue
             if (file.name.contains(query, ignoreCase = true)) {
                 results.add(FileItem.fromFile(file))
             }
-            if (file.isDirectory && !file.name.startsWith(".")) {
-                searchRecursive(file, query, results, maxResults, maxDepth, currentDepth + 1)
+            if (file.isDirectory && (showHiddenFiles || !file.name.startsWith("."))) {
+                searchRecursive(file, query, results, maxResults, maxDepth, currentDepth + 1, showHiddenFiles)
             }
         }
     }

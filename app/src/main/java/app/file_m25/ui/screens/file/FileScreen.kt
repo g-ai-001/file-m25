@@ -12,6 +12,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -29,6 +33,8 @@ import androidx.compose.material.icons.filled.MoveUp
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.ViewList
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
@@ -241,10 +247,30 @@ private fun NormalModeScaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = pathParts.lastOrNull() ?: "文件",
-                        maxLines = 1
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        pathParts.forEachIndexed { index, part ->
+                            if (index > 0) {
+                                Text(">", modifier = Modifier.padding(horizontal = 4.dp))
+                            }
+                            TextButton(
+                                onClick = {
+                                    if (index < pathParts.size - 1) {
+                                        val targetPath = pathParts.take(index + 1).joinToString("/")
+                                        onNavigateToFile("/$targetPath")
+                                    }
+                                }
+                            ) {
+                                Text(
+                                    text = if (index == pathParts.size - 1) part else part,
+                                    color = if (index == pathParts.size - 1) {
+                                        MaterialTheme.colorScheme.onSurface
+                                    } else {
+                                        MaterialTheme.colorScheme.primary
+                                    }
+                                )
+                            }
+                        }
+                    }
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
@@ -280,6 +306,14 @@ private fun NormalModeScaffold(
                                 }
                             )
                         }
+                    }
+                    IconButton(onClick = {
+                        viewModel.setShowHiddenFiles(!uiState.showHiddenFiles)
+                    }) {
+                        Icon(
+                            if (uiState.showHiddenFiles) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                            contentDescription = if (uiState.showHiddenFiles) "隐藏文件" else "显示文件"
+                        )
                     }
                     IconButton(onClick = {
                         viewModel.setViewMode(

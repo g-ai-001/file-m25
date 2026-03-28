@@ -11,8 +11,8 @@ import javax.inject.Inject
 class GetFilesUseCase @Inject constructor(
     private val repository: FileRepository
 ) {
-    operator fun invoke(path: String, sortMode: SortMode = SortMode.NAME_ASC): Flow<List<FileItem>> {
-        return repository.getFiles(path).map { files ->
+    operator fun invoke(path: String, sortMode: SortMode = SortMode.NAME_ASC, showHiddenFiles: Boolean = false): Flow<List<FileItem>> {
+        return repository.getFiles(path, showHiddenFiles).map { files ->
             sortFiles(files, sortMode)
         }
     }

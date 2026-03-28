@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -26,6 +27,8 @@ class PreferencesRepository @Inject constructor(
         private val KEY_DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
         private val KEY_SORT_MODE = stringPreferencesKey("sort_mode")
         private val KEY_VIEW_MODE = stringPreferencesKey("view_mode")
+        private val KEY_SHOW_HIDDEN_FILES = booleanPreferencesKey("show_hidden_files")
+        private val KEY_BOOKMARKS = stringSetPreferencesKey("bookmarks")
     }
 
     enum class ThemeMode {
@@ -46,6 +49,14 @@ class PreferencesRepository @Inject constructor(
 
     val dynamicColorEnabled: Flow<Boolean> = context.dataStore.data.map { preferences ->
         preferences[KEY_DYNAMIC_COLOR] ?: true
+    }
+
+    val showHiddenFiles: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[KEY_SHOW_HIDDEN_FILES] ?: false
+    }
+
+    val bookmarks: Flow<Set<String>> = context.dataStore.data.map { preferences ->
+        preferences[KEY_BOOKMARKS] ?: emptySet()
     }
 
     suspend fun setThemeMode(mode: ThemeMode) {
@@ -71,6 +82,26 @@ class PreferencesRepository @Inject constructor(
     suspend fun setDynamicColorEnabled(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[KEY_DYNAMIC_COLOR] = enabled
+        }
+    }
+
+    suspend fun setShowHiddenFiles(show: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[KEY_SHOW_HIDDEN_FILES] = show
+        }
+    }
+
+    suspend fun addBookmark(path: String) {
+        context.dataStore.edit { preferences ->
+            val current = preferences[KEY_BOOKMARKS] ?: emptySet()
+            preferences[KEY_BOOKMARKS] = current + path
+        }
+    }
+
+    suspend fun removeBookmark(path: String) {
+        context.dataStore.edit { preferences ->
+            val current = preferences[KEY_BOOKMARKS] ?: emptySet()
+            preferences[KEY_BOOKMARKS] = current - path
         }
     }
 }

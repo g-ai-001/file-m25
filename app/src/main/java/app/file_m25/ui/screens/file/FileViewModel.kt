@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.file_m25.data.repository.FavoriteRepository
+import app.file_m25.data.repository.PreferencesRepository
 import app.file_m25.data.repository.RecentRepository
 import app.file_m25.domain.model.FileItem
 import app.file_m25.domain.model.SortMode
@@ -31,6 +32,7 @@ data class FileUiState(
     val error: String? = null,
     val sortMode: SortMode = SortMode.NAME_ASC,
     val viewMode: ViewMode = ViewMode.LIST,
+    val showHiddenFiles: Boolean = false,
     val selectedFile: FileItem? = null,
     val showRenameDialog: Boolean = false,
     val showDeleteDialog: Boolean = false,
@@ -59,7 +61,8 @@ class FileViewModel @Inject constructor(
     private val copyFileUseCase: CopyFileUseCase,
     private val moveFileUseCase: MoveFileUseCase,
     private val favoriteRepository: FavoriteRepository,
-    private val recentRepository: RecentRepository
+    private val recentRepository: RecentRepository,
+    private val preferencesRepository: PreferencesRepository
 ) : ViewModel() {
 
     private val encodedPath: String = savedStateHandle.get<String>("path") ?: ""
@@ -71,12 +74,23 @@ class FileViewModel @Inject constructor(
         val path = java.net.URLDecoder.decode(encodedPath, "UTF-8")
         _uiState.update { it.copy(currentPath = path) }
         loadFiles()
+        observeShowHiddenFiles()
+    }
+
+    private fun observeShowHiddenFiles() {
+        viewModelScope.launch {
+            preferencesRepository.showHiddenFiles.collect { show ->
+                _uiState.update { it.copy(showHiddenFiles = show) }
+                loadFiles()
+            }
+        }
     }
 
     fun loadFiles() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
-            getFilesUseCase(_uiState.value.currentPath, _uiState.value.sortMode)
+            val showHidden = _uiState.value.showHiddenFiles
+            getFilesUseCase(_uiState.value.currentPath, _uiState.value.sortMode, showHidden)
                 .catch { e ->
                     Logger.e("FileViewModel", "Failed to load files", e)
                     _uiState.update { it.copy(isLoading = false, error = e.message) }
@@ -94,6 +108,12 @@ class FileViewModel @Inject constructor(
 
     fun setViewMode(mode: ViewMode) {
         _uiState.update { it.copy(viewMode = mode) }
+    }
+
+    fun setShowHiddenFiles(show: Boolean) {
+        viewModelScope.launch {
+            preferencesRepository.setShowHiddenFiles(show)
+        }
     }
 
     fun selectFile(file: FileItem?) {
