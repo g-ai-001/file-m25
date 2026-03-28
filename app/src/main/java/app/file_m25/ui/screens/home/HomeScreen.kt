@@ -95,6 +95,8 @@ fun HomeScreen(
     onNavigateToFile: (String) -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToImagePreview: (List<String>, Int) -> Unit,
+    onNavigateToVideoPreview: (String) -> Unit,
+    onNavigateToAudioPreview: (String) -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -190,7 +192,9 @@ fun HomeScreen(
                 onEnterRecent = { viewModel.enterRecentMode() },
                 viewModel = viewModel,
                 snackbarHostState = snackbarHostState,
-                onNavigateToImagePreview = onNavigateToImagePreview
+                onNavigateToImagePreview = onNavigateToImagePreview,
+                onNavigateToVideoPreview = onNavigateToVideoPreview,
+                onNavigateToAudioPreview = onNavigateToAudioPreview
             )
         }
     }
@@ -304,7 +308,9 @@ private fun NormalModeScaffold(
     onEnterRecent: () -> Unit,
     viewModel: HomeViewModel,
     snackbarHostState: SnackbarHostState,
-    onNavigateToImagePreview: (List<String>, Int) -> Unit
+    onNavigateToImagePreview: (List<String>, Int) -> Unit,
+    onNavigateToVideoPreview: (String) -> Unit,
+    onNavigateToAudioPreview: (String) -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -387,6 +393,10 @@ private fun NormalModeScaffold(
                                             val imageFiles = uiState.files.filter { it.mimeType.startsWith("image/") }
                                             val index = imageFiles.indexOf(file)
                                             onNavigateToImagePreview(imageFiles.map { it.path }, if (index >= 0) index else 0)
+                                        } else if (file.mimeType.startsWith("video/")) {
+                                            onNavigateToVideoPreview(file.path)
+                                        } else if (file.mimeType.startsWith("audio/")) {
+                                            onNavigateToAudioPreview(file.path)
                                         } else {
                                             viewModel.selectFile(file)
                                             viewModel.addToRecent(file)
@@ -416,6 +426,10 @@ private fun NormalModeScaffold(
                                             val imageFiles = uiState.files.filter { it.mimeType.startsWith("image/") }
                                             val index = imageFiles.indexOf(file)
                                             onNavigateToImagePreview(imageFiles.map { it.path }, if (index >= 0) index else 0)
+                                        } else if (file.mimeType.startsWith("video/")) {
+                                            onNavigateToVideoPreview(file.path)
+                                        } else if (file.mimeType.startsWith("audio/")) {
+                                            onNavigateToAudioPreview(file.path)
                                         } else {
                                             viewModel.selectFile(file)
                                             viewModel.addToRecent(file)

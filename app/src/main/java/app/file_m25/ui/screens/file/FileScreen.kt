@@ -12,10 +12,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -86,6 +82,8 @@ fun FileScreen(
     onNavigateBack: () -> Unit,
     onNavigateToFile: (String) -> Unit,
     onNavigateToImagePreview: (List<String>, Int) -> Unit,
+    onNavigateToVideoPreview: (String) -> Unit,
+    onNavigateToAudioPreview: (String) -> Unit,
     viewModel: FileViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -157,7 +155,9 @@ fun FileScreen(
             onNavigateToFile = onNavigateToFile,
             viewModel = viewModel,
             snackbarHostState = snackbarHostState,
-            onNavigateToImagePreview = onNavigateToImagePreview
+            onNavigateToImagePreview = onNavigateToImagePreview,
+            onNavigateToVideoPreview = onNavigateToVideoPreview,
+            onNavigateToAudioPreview = onNavigateToAudioPreview
         )
     }
 
@@ -244,7 +244,9 @@ private fun NormalModeScaffold(
     onNavigateToFile: (String) -> Unit,
     viewModel: FileViewModel,
     snackbarHostState: SnackbarHostState,
-    onNavigateToImagePreview: (List<String>, Int) -> Unit
+    onNavigateToImagePreview: (List<String>, Int) -> Unit,
+    onNavigateToVideoPreview: (String) -> Unit,
+    onNavigateToAudioPreview: (String) -> Unit
 ) {
     val pathParts = path.split("/").filter { it.isNotEmpty() }
 
@@ -360,6 +362,10 @@ private fun NormalModeScaffold(
                                             val imageFiles = uiState.files.filter { it.mimeType.startsWith("image/") }
                                             val index = imageFiles.indexOf(file)
                                             onNavigateToImagePreview(imageFiles.map { it.path }, if (index >= 0) index else 0)
+                                        } else if (file.mimeType.startsWith("video/")) {
+                                            onNavigateToVideoPreview(file.path)
+                                        } else if (file.mimeType.startsWith("audio/")) {
+                                            onNavigateToAudioPreview(file.path)
                                         } else {
                                             viewModel.selectFile(file)
                                             viewModel.addToRecent(file)
@@ -389,6 +395,10 @@ private fun NormalModeScaffold(
                                             val imageFiles = uiState.files.filter { it.mimeType.startsWith("image/") }
                                             val index = imageFiles.indexOf(file)
                                             onNavigateToImagePreview(imageFiles.map { it.path }, if (index >= 0) index else 0)
+                                        } else if (file.mimeType.startsWith("video/")) {
+                                            onNavigateToVideoPreview(file.path)
+                                        } else if (file.mimeType.startsWith("audio/")) {
+                                            onNavigateToAudioPreview(file.path)
                                         } else {
                                             viewModel.selectFile(file)
                                             viewModel.addToRecent(file)

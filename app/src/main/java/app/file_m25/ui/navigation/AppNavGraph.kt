@@ -6,10 +6,12 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import app.file_m25.ui.screens.audiopreview.AudioPreviewScreen
 import app.file_m25.ui.screens.file.FileScreen
 import app.file_m25.ui.screens.home.HomeScreen
 import app.file_m25.ui.screens.imagepreview.ImagePreviewScreen
 import app.file_m25.ui.screens.settings.SettingsScreen
+import app.file_m25.ui.screens.videopreview.VideoPreviewScreen
 
 @Composable
 fun AppNavGraph(
@@ -29,6 +31,12 @@ fun AppNavGraph(
                 },
                 onNavigateToImagePreview = { paths, index ->
                     navController.navigate(Screen.ImagePreview.createRoute(paths, index))
+                },
+                onNavigateToVideoPreview = { path ->
+                    navController.navigate(Screen.VideoPreview.createRoute(path))
+                },
+                onNavigateToAudioPreview = { path ->
+                    navController.navigate(Screen.AudioPreview.createRoute(path))
                 }
             )
         }
@@ -49,6 +57,12 @@ fun AppNavGraph(
                 },
                 onNavigateToImagePreview = { paths, index ->
                     navController.navigate(Screen.ImagePreview.createRoute(paths, index))
+                },
+                onNavigateToVideoPreview = { videoPath ->
+                    navController.navigate(Screen.VideoPreview.createRoute(videoPath))
+                },
+                onNavigateToAudioPreview = { audioPath ->
+                    navController.navigate(Screen.AudioPreview.createRoute(audioPath))
                 }
             )
         }
@@ -72,6 +86,34 @@ fun AppNavGraph(
             ImagePreviewScreen(
                 imagePaths = paths,
                 initialIndex = initialIndex,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Screen.VideoPreview.route,
+            arguments = listOf(
+                navArgument("path") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val encodedPath = backStackEntry.arguments?.getString("path") ?: ""
+            val path = encodedPath.decodeUrl()
+            VideoPreviewScreen(
+                videoPath = path,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Screen.AudioPreview.route,
+            arguments = listOf(
+                navArgument("path") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val encodedPath = backStackEntry.arguments?.getString("path") ?: ""
+            val path = encodedPath.decodeUrl()
+            AudioPreviewScreen(
+                audioPath = path,
                 onNavigateBack = { navController.popBackStack() }
             )
         }
