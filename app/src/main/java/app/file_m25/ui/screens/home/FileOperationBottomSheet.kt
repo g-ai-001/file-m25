@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Archive
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -33,6 +35,7 @@ fun FileOperationBottomSheet(
     fileName: String,
     isZipFile: Boolean = false,
     isFavorite: Boolean = false,
+    isBookmarked: Boolean = false,
     onInfo: () -> Unit,
     onRename: () -> Unit,
     onCopy: () -> Unit,
@@ -41,6 +44,7 @@ fun FileOperationBottomSheet(
     onCompress: () -> Unit,
     onExtract: () -> Unit,
     onToggleFavorite: () -> Unit,
+    onToggleBookmark: () -> Unit,
     onShare: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -99,6 +103,17 @@ fun FileOperationBottomSheet(
                         modifier = Modifier.padding(end = 8.dp)
                     )
                     Text(if (isFavorite) "取消收藏" else "收藏")
+                }
+                TextButton(onClick = {
+                    onToggleBookmark()
+                    onDismiss()
+                }) {
+                    Icon(
+                        if (isBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                    Text(if (isBookmarked) "取消书签" else "添加书签")
                 }
                 TextButton(onClick = {
                     onRename()

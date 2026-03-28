@@ -192,6 +192,7 @@ fun HomeScreen(
             fileName = file.name,
             isZipFile = file.extension.lowercase() == "zip",
             isFavorite = viewModel.isFavorite(file.path),
+            isBookmarked = viewModel.isBookmarked(file.path),
             onInfo = { viewModel.showFileInfoDialog() },
             onRename = { viewModel.showRenameDialog() },
             onCopy = { viewModel.showCopyDialog() },
@@ -200,6 +201,7 @@ fun HomeScreen(
             onCompress = { viewModel.showCompressDialog() },
             onExtract = { viewModel.showExtractDialog() },
             onToggleFavorite = { viewModel.toggleFavorite(file) },
+            onToggleBookmark = { viewModel.toggleBookmark(file) },
             onShare = { viewModel.shareFile(file) },
             onDismiss = { viewModel.selectFile(null) }
         )
