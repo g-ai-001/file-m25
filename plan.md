@@ -114,7 +114,7 @@
 - [x] 修复Issue #2: 文件列表只显示文件夹不显示文件问题（添加存储权限请求逻辑）
 - [x] 修复Issue #1: 标题栏按钮数量超过3个优化（精简为3个按钮）
 
-### 0.8.0 (开发版本)
+### 0.8.0 (已完成版本)
 **目标**: 视频/音频预览功能
 - [x] 创建VideoPreviewScreen使用Media3 ExoPlayer播放视频
 - [x] 创建AudioPreviewScreen使用Media3 ExoPlayer播放音频
