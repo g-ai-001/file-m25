@@ -164,6 +164,7 @@ fun FileScreen(
             fileName = file.name,
             isZipFile = file.extension.lowercase() == "zip",
             isFavorite = uiState.isFavorite,
+            isBookmarked = uiState.isBookmarked,
             onInfo = { viewModel.showFileInfoDialog() },
             onRename = { viewModel.showRenameDialog() },
             onCopy = { viewModel.showCopyDialog() },
@@ -172,6 +173,7 @@ fun FileScreen(
             onCompress = { },
             onExtract = { },
             onToggleFavorite = { viewModel.toggleFavorite(file) },
+            onToggleBookmark = { viewModel.toggleBookmark(file) },
             onShare = { viewModel.shareFile(file) },
             onDismiss = { viewModel.selectFile(null) }
         )

@@ -48,7 +48,8 @@ data class FileUiState(
     val showFileInfoDialog: Boolean = false,
     val snackbarMessage: String? = null,
     val isFavorite: Boolean = false,
-    val shareFilePath: String? = null
+    val shareFilePath: String? = null,
+    val isBookmarked: Boolean = false
 )
 
 @HiltViewModel
@@ -117,8 +118,31 @@ class FileViewModel @Inject constructor(
     }
 
     fun selectFile(file: FileItem?) {
-        _uiState.update { it.copy(selectedFile = file, isFavorite = false) }
-        file?.let { checkFavoriteStatus(it) }
+        _uiState.update { it.copy(selectedFile = file, isFavorite = false, isBookmarked = false) }
+        file?.let {
+            checkFavoriteStatus(it)
+            checkBookmarkStatus(it)
+        }
+    }
+
+    private fun checkBookmarkStatus(file: FileItem) {
+        viewModelScope.launch {
+            preferencesRepository.bookmarks.collect { bookmarks ->
+                _uiState.update { it.copy(isBookmarked = bookmarks.contains(file.path)) }
+            }
+        }
+    }
+
+    fun toggleBookmark(file: FileItem) {
+        viewModelScope.launch {
+            if (_uiState.value.isBookmarked) {
+                preferencesRepository.removeBookmark(file.path)
+                Logger.i("FileViewModel", "Removed bookmark: ${file.name}")
+            } else {
+                preferencesRepository.addBookmark(file.path)
+                Logger.i("FileViewModel", "Added bookmark: ${file.name}")
+            }
+        }
     }
 
     fun showRenameDialog() {
