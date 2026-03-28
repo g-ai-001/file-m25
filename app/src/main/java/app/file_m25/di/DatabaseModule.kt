@@ -5,6 +5,7 @@ import androidx.room.Room
 import app.file_m25.data.local.AppDatabase
 import app.file_m25.data.local.dao.FavoriteDao
 import app.file_m25.data.local.dao.RecentDao
+import app.file_m25.data.local.dao.TrashDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -38,5 +39,11 @@ object DatabaseModule {
     @Singleton
     fun provideRecentDao(database: AppDatabase): RecentDao {
         return database.recentDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideTrashDao(database: AppDatabase): TrashDao {
+        return database.trashDao()
     }
 }
