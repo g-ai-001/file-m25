@@ -114,7 +114,9 @@ fun TextPreviewScreen(
             }
             currentSearchIndex = 0
             if (searchResults.isNotEmpty()) {
-                listState.animateScrollToItem(searchResults[0])
+                scope.launch {
+                    listState.animateScrollToItem(searchResults[0])
+                }
             }
         } else {
             searchResults = emptyList()
@@ -124,7 +126,9 @@ fun TextPreviewScreen(
     fun navigateToSearchResult(direction: Int) {
         if (searchResults.isEmpty()) return
         currentSearchIndex = (currentSearchIndex + direction + searchResults.size) % searchResults.size
-        listState.animateScrollToItem(searchResults[currentSearchIndex])
+        scope.launch {
+            listState.animateScrollToItem(searchResults[currentSearchIndex])
+        }
     }
 
     Scaffold(
