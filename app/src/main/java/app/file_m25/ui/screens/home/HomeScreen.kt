@@ -26,9 +26,11 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MoveUp
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -97,6 +99,8 @@ fun HomeScreen(
     onNavigateToImagePreview: (List<String>, Int) -> Unit,
     onNavigateToVideoPreview: (String) -> Unit,
     onNavigateToAudioPreview: (String) -> Unit,
+    onNavigateToPdfPreview: (String) -> Unit = {},
+    onNavigateToTrash: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -195,7 +199,9 @@ fun HomeScreen(
                 snackbarHostState = snackbarHostState,
                 onNavigateToImagePreview = onNavigateToImagePreview,
                 onNavigateToVideoPreview = onNavigateToVideoPreview,
-                onNavigateToAudioPreview = onNavigateToAudioPreview
+                onNavigateToAudioPreview = onNavigateToAudioPreview,
+                onNavigateToPdfPreview = onNavigateToPdfPreview,
+                onNavigateToTrash = onNavigateToTrash
             )
         }
     }
@@ -311,8 +317,12 @@ private fun NormalModeScaffold(
     snackbarHostState: SnackbarHostState,
     onNavigateToImagePreview: (List<String>, Int) -> Unit,
     onNavigateToVideoPreview: (String) -> Unit,
-    onNavigateToAudioPreview: (String) -> Unit
+    onNavigateToAudioPreview: (String) -> Unit,
+    onNavigateToPdfPreview: (String) -> Unit,
+    onNavigateToTrash: () -> Unit
 ) {
+    var showMoreMenu by remember { mutableStateOf(false) }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -349,8 +359,45 @@ private fun NormalModeScaffold(
                             }
                         }
                     }
-                    IconButton(onClick = onNavigateToSettings) {
-                        Icon(Icons.Default.Settings, contentDescription = "设置")
+                    Box {
+                        IconButton(onClick = { showMoreMenu = true }) {
+                            Icon(Icons.Default.MoreVert, contentDescription = "更多")
+                        }
+                        DropdownMenu(
+                            expanded = showMoreMenu,
+                            onDismissRequest = { showMoreMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("收藏") },
+                                onClick = {
+                                    onEnterFavorites()
+                                    showMoreMenu = false
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Star, contentDescription = null)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("最近文件") },
+                                onClick = {
+                                    onEnterRecent()
+                                    showMoreMenu = false
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Default.History, contentDescription = null)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("回收站") },
+                                onClick = {
+                                    onNavigateToTrash()
+                                    showMoreMenu = false
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Default.DeleteForever, contentDescription = null)
+                                }
+                            )
+                        }
                     }
                 }
             )
@@ -398,6 +445,8 @@ private fun NormalModeScaffold(
                                             onNavigateToVideoPreview(file.path)
                                         } else if (file.mimeType.startsWith("audio/")) {
                                             onNavigateToAudioPreview(file.path)
+                                        } else if (file.extension.lowercase() == "pdf") {
+                                            onNavigateToPdfPreview(file.path)
                                         } else {
                                             viewModel.selectFile(file)
                                             viewModel.addToRecent(file)
@@ -431,6 +480,8 @@ private fun NormalModeScaffold(
                                             onNavigateToVideoPreview(file.path)
                                         } else if (file.mimeType.startsWith("audio/")) {
                                             onNavigateToAudioPreview(file.path)
+                                        } else if (file.extension.lowercase() == "pdf") {
+                                            onNavigateToPdfPreview(file.path)
                                         } else {
                                             viewModel.selectFile(file)
                                             viewModel.addToRecent(file)

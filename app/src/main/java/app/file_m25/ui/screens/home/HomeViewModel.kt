@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import app.file_m25.data.repository.FavoriteRepository
 import app.file_m25.data.repository.PreferencesRepository
 import app.file_m25.data.repository.RecentRepository
+import app.file_m25.data.repository.TrashRepository
 import app.file_m25.domain.model.FileItem
 import app.file_m25.domain.model.SortMode
 import app.file_m25.domain.model.ViewMode
@@ -83,7 +84,8 @@ class HomeViewModel @Inject constructor(
     private val extractZipUseCase: ExtractZipUseCase,
     private val favoriteRepository: FavoriteRepository,
     private val recentRepository: RecentRepository,
-    private val preferencesRepository: PreferencesRepository
+    private val preferencesRepository: PreferencesRepository,
+    private val trashRepository: TrashRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -232,16 +234,16 @@ class HomeViewModel @Inject constructor(
     fun deleteFile() {
         val selectedFile = _uiState.value.selectedFile ?: return
         viewModelScope.launch {
-            val result = deleteFileUseCase(selectedFile.path)
-            result.onSuccess {
-                Logger.i("HomeViewModel", "File deleted: ${selectedFile.name}")
+            val success = trashRepository.addToTrash(selectedFile)
+            if (success) {
+                Logger.i("HomeViewModel", "File deleted to trash: ${selectedFile.name}")
                 hideDeleteDialog()
                 selectFile(null)
                 loadFiles()
                 loadStorageInfo()
-            }.onFailure { e ->
-                Logger.e("HomeViewModel", "Failed to delete file", e)
-                showError("删除失败: ${e.message}")
+            } else {
+                Logger.e("HomeViewModel", "Failed to delete file to trash")
+                showError("删除失败")
             }
         }
     }

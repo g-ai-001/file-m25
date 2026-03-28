@@ -13,8 +13,8 @@ android {
         applicationId = "app.file_m25"
         minSdk = 36
         targetSdk = 36
-        versionCode = 14
-        versionName = "0.8.2"
+        versionCode = 15
+        versionName = "0.9.0"
 
         vectorDrawables {
             useSupportLibrary = true
@@ -98,6 +98,7 @@ dependencies {
     implementation(libs.material3.window.size)
     implementation(libs.glance.appwidget)
     implementation(libs.glance.material3)
+    implementation(libs.pdfium.android)
 
     debugImplementation(libs.androidx.ui.tooling)
 }

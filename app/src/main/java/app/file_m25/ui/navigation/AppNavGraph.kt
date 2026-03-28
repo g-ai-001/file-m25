@@ -10,7 +10,9 @@ import app.file_m25.ui.screens.audiopreview.AudioPreviewScreen
 import app.file_m25.ui.screens.file.FileScreen
 import app.file_m25.ui.screens.home.HomeScreen
 import app.file_m25.ui.screens.imagepreview.ImagePreviewScreen
+import app.file_m25.ui.screens.pdfpreview.PdfPreviewScreen
 import app.file_m25.ui.screens.settings.SettingsScreen
+import app.file_m25.ui.screens.trash.TrashScreen
 import app.file_m25.ui.screens.videopreview.VideoPreviewScreen
 
 @Composable
@@ -37,6 +39,12 @@ fun AppNavGraph(
                 },
                 onNavigateToAudioPreview = { path ->
                     navController.navigate(Screen.AudioPreview.createRoute(path))
+                },
+                onNavigateToPdfPreview = { path ->
+                    navController.navigate(Screen.PdfPreview.createRoute(path))
+                },
+                onNavigateToTrash = {
+                    navController.navigate(Screen.Trash.route)
                 }
             )
         }
@@ -114,6 +122,26 @@ fun AppNavGraph(
             val path = encodedPath.decodeUrl()
             AudioPreviewScreen(
                 audioPath = path,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Screen.PdfPreview.route,
+            arguments = listOf(
+                navArgument("path") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val encodedPath = backStackEntry.arguments?.getString("path") ?: ""
+            val path = encodedPath.decodeUrl()
+            PdfPreviewScreen(
+                pdfPath = path,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Screen.Trash.route) {
+            TrashScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }

@@ -90,6 +90,7 @@ fun FileScreen(
     onNavigateToImagePreview: (List<String>, Int) -> Unit,
     onNavigateToVideoPreview: (String) -> Unit,
     onNavigateToAudioPreview: (String) -> Unit,
+    onNavigateToPdfPreview: (String) -> Unit = {},
     viewModel: FileViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -164,7 +165,8 @@ fun FileScreen(
             snackbarHostState = snackbarHostState,
             onNavigateToImagePreview = onNavigateToImagePreview,
             onNavigateToVideoPreview = onNavigateToVideoPreview,
-            onNavigateToAudioPreview = onNavigateToAudioPreview
+            onNavigateToAudioPreview = onNavigateToAudioPreview,
+            onNavigateToPdfPreview = onNavigateToPdfPreview
         )
     }
 
@@ -253,7 +255,8 @@ private fun NormalModeScaffold(
     snackbarHostState: SnackbarHostState,
     onNavigateToImagePreview: (List<String>, Int) -> Unit,
     onNavigateToVideoPreview: (String) -> Unit,
-    onNavigateToAudioPreview: (String) -> Unit
+    onNavigateToAudioPreview: (String) -> Unit,
+    onNavigateToPdfPreview: (String) -> Unit
 ) {
     val pathParts = path.split("/").filter { it.isNotEmpty() }
     val scrollState = rememberScrollState()
@@ -389,6 +392,8 @@ private fun NormalModeScaffold(
                                             onNavigateToVideoPreview(file.path)
                                         } else if (file.mimeType.startsWith("audio/")) {
                                             onNavigateToAudioPreview(file.path)
+                                        } else if (file.extension.lowercase() == "pdf") {
+                                            onNavigateToPdfPreview(file.path)
                                         } else {
                                             viewModel.selectFile(file)
                                             viewModel.addToRecent(file)
@@ -422,6 +427,8 @@ private fun NormalModeScaffold(
                                             onNavigateToVideoPreview(file.path)
                                         } else if (file.mimeType.startsWith("audio/")) {
                                             onNavigateToAudioPreview(file.path)
+                                        } else if (file.extension.lowercase() == "pdf") {
+                                            onNavigateToPdfPreview(file.path)
                                         } else {
                                             viewModel.selectFile(file)
                                             viewModel.addToRecent(file)
