@@ -1,5 +1,6 @@
 package app.file_m25.domain.usecase
 
+import app.file_m25.domain.model.FileCategory
 import app.file_m25.domain.model.FileItem
 import app.file_m25.domain.model.SortMode
 import app.file_m25.domain.repository.FileRepository
@@ -112,5 +113,21 @@ class ExtractZipUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(zipPath: String, destFolder: String): Result<String> {
         return repository.extractZip(zipPath, destFolder)
+    }
+}
+
+class GetFilesByCategoryUseCase @Inject constructor(
+    private val repository: FileRepository
+) {
+    operator fun invoke(category: FileCategory, rootPath: String, showHiddenFiles: Boolean = false): Flow<List<FileItem>> {
+        return repository.getFilesByCategory(category, rootPath, showHiddenFiles)
+    }
+}
+
+class GetStorageAnalysisUseCase @Inject constructor(
+    private val repository: FileRepository
+) {
+    suspend operator fun invoke(rootPath: String): Map<FileCategory, Long> {
+        return repository.getStorageAnalysis(rootPath)
     }
 }

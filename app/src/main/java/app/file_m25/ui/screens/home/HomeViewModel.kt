@@ -7,6 +7,7 @@ import app.file_m25.data.repository.FavoriteRepository
 import app.file_m25.data.repository.PreferencesRepository
 import app.file_m25.data.repository.RecentRepository
 import app.file_m25.data.repository.TrashRepository
+import app.file_m25.domain.model.FileCategory
 import app.file_m25.domain.model.FileItem
 import app.file_m25.domain.model.SortMode
 import app.file_m25.domain.model.ViewMode
@@ -14,6 +15,8 @@ import app.file_m25.domain.repository.StorageInfo
 import app.file_m25.domain.usecase.CreateFolderUseCase
 import app.file_m25.domain.usecase.DeleteFileUseCase
 import app.file_m25.domain.usecase.GetFilesUseCase
+import app.file_m25.domain.usecase.GetFilesByCategoryUseCase
+import app.file_m25.domain.usecase.GetStorageAnalysisUseCase
 import app.file_m25.domain.usecase.GetStorageInfoUseCase
 import app.file_m25.domain.usecase.RenameFileUseCase
 import app.file_m25.domain.usecase.SearchFilesUseCase
@@ -67,7 +70,11 @@ data class HomeUiState(
     val showRecent: Boolean = false,
     val shareFilePath: String? = null,
     val bookmarkPaths: Set<String> = emptySet(),
-    val showBookmarks: Boolean = false
+    val showBookmarks: Boolean = false,
+    val showCategoryMode: Boolean = false,
+    val selectedCategory: FileCategory? = null,
+    val showStorageAnalysis: Boolean = false,
+    val storageAnalysis: Map<FileCategory, Long> = emptyMap()
 )
 
 @HiltViewModel
@@ -77,11 +84,13 @@ class HomeViewModel @Inject constructor(
     private val deleteFileUseCase: DeleteFileUseCase,
     private val renameFileUseCase: RenameFileUseCase,
     private val getStorageInfoUseCase: GetStorageInfoUseCase,
+    private val getStorageAnalysisUseCase: GetStorageAnalysisUseCase,
     private val searchFilesUseCase: SearchFilesUseCase,
     private val copyFileUseCase: CopyFileUseCase,
     private val moveFileUseCase: MoveFileUseCase,
     private val compressFilesUseCase: CompressFilesUseCase,
     private val extractZipUseCase: ExtractZipUseCase,
+    private val getFilesByCategoryUseCase: GetFilesByCategoryUseCase,
     private val favoriteRepository: FavoriteRepository,
     private val recentRepository: RecentRepository,
     private val preferencesRepository: PreferencesRepository,
@@ -548,5 +557,58 @@ class HomeViewModel @Inject constructor(
 
     fun clearShareFile() {
         _uiState.update { it.copy(shareFilePath = null) }
+    }
+
+    fun enterCategoryMode() {
+        _uiState.update { it.copy(showCategoryMode = true) }
+    }
+
+    fun exitCategoryMode() {
+        _uiState.update { it.copy(showCategoryMode = false, selectedCategory = null, files = emptyList()) }
+    }
+
+    fun selectCategory(category: FileCategory) {
+        _uiState.update { it.copy(selectedCategory = category) }
+        loadFilesByCategory(category)
+    }
+
+    private fun loadFilesByCategory(category: FileCategory) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            getFilesByCategoryUseCase(category, _uiState.value.currentPath, _uiState.value.showHiddenFiles)
+                .catch { e ->
+                    Logger.e("HomeViewModel", "Failed to load files by category", e)
+                    _uiState.update { it.copy(isLoading = false, error = e.message) }
+                }
+                .collect { files ->
+                    _uiState.update { it.copy(isLoading = false, files = files) }
+                }
+        }
+    }
+
+    fun enterStorageAnalysis() {
+        _uiState.update { it.copy(showStorageAnalysis = true) }
+        loadStorageAnalysis()
+    }
+
+    fun exitStorageAnalysis() {
+        _uiState.update { it.copy(showStorageAnalysis = false) }
+    }
+
+    private fun loadStorageAnalysis() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            try {
+                val analysis = getStorageAnalysisUseCase(_uiState.value.currentPath)
+                _uiState.update { it.copy(isLoading = false, storageAnalysis = analysis) }
+            } catch (e: Exception) {
+                Logger.e("HomeViewModel", "Failed to load storage analysis", e)
+                _uiState.update { it.copy(isLoading = false, error = e.message) }
+            }
+        }
+    }
+
+    fun clearCategorySelection() {
+        _uiState.update { it.copy(selectedCategory = null) }
     }
 }

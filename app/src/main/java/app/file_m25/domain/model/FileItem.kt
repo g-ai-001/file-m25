@@ -9,7 +9,8 @@ data class FileItem(
     val size: Long,
     val lastModified: Long,
     val extension: String = "",
-    val mimeType: String = ""
+    val mimeType: String = "",
+    val category: FileCategory = if (isDirectory) FileCategory.OTHER else getFileCategory(extension, mimeType)
 ) {
     val nameWithoutExtension: String
         get() = if (extension.isNotEmpty()) {
@@ -20,14 +21,17 @@ data class FileItem(
 
     companion object {
         fun fromFile(file: File): FileItem {
+            val ext = if (file.isFile) file.extension.lowercase() else ""
+            val mime = getMimeType(file)
             return FileItem(
                 path = file.absolutePath,
                 name = file.name,
                 isDirectory = file.isDirectory,
                 size = if (file.isFile) file.length() else 0L,
                 lastModified = file.lastModified(),
-                extension = if (file.isFile) file.extension.lowercase() else "",
-                mimeType = getMimeType(file)
+                extension = ext,
+                mimeType = mime,
+                category = if (file.isDirectory) FileCategory.OTHER else getFileCategory(ext, mime)
             )
         }
 

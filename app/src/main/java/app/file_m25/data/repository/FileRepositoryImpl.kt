@@ -2,7 +2,9 @@ package app.file_m25.data.repository
 
 import android.os.Environment
 import android.os.StatFs
+import app.file_m25.domain.model.FileCategory
 import app.file_m25.domain.model.FileItem
+import app.file_m25.domain.model.getFileCategory
 import app.file_m25.domain.repository.FileRepository
 import app.file_m25.domain.repository.StorageInfo
 import app.file_m25.util.Logger
@@ -64,6 +66,36 @@ class FileRepositoryImpl @Inject constructor() : FileRepository {
             }
             if (file.isDirectory && (showHiddenFiles || !file.name.startsWith("."))) {
                 searchRecursive(file, query, results, maxResults, maxDepth, currentDepth + 1, showHiddenFiles)
+            }
+        }
+    }
+
+    override fun getFilesByCategory(category: FileCategory, rootPath: String, showHiddenFiles: Boolean): Flow<List<FileItem>> = flow {
+        val results = mutableListOf<FileItem>()
+        scanCategoryRecursive(File(rootPath), category, results, maxDepth = 15, currentDepth = 0, showHiddenFiles)
+        emit(results)
+    }
+
+    private fun scanCategoryRecursive(
+        dir: File,
+        category: FileCategory,
+        results: MutableList<FileItem>,
+        maxDepth: Int,
+        currentDepth: Int,
+        showHiddenFiles: Boolean
+    ) {
+        if (currentDepth >= maxDepth) return
+        val files = dir.listFiles() ?: return
+        for (file in files) {
+            if (!showHiddenFiles && file.name.startsWith(".")) continue
+            if (file.isDirectory) {
+                scanCategoryRecursive(file, category, results, maxDepth, currentDepth + 1, showHiddenFiles)
+            } else {
+                val ext = file.extension.lowercase()
+                val mimeType = getMimeType(file)
+                if (getFileCategory(ext, mimeType) == category) {
+                    results.add(FileItem.fromFile(file))
+                }
             }
         }
     }
@@ -191,6 +223,34 @@ class FileRepositoryImpl @Inject constructor() : FileRepository {
         val freeSpace = stat.blockSizeLong * stat.availableBlocksLong
         val usedSpace = totalSpace - freeSpace
         StorageInfo(totalSpace, freeSpace, usedSpace)
+    }
+
+    override suspend fun getStorageAnalysis(rootPath: String): Map<FileCategory, Long> = withContext(Dispatchers.IO) {
+        val analysis = mutableMapOf<FileCategory, Long>()
+        FileCategory.entries.forEach { analysis[it] = 0L }
+        analyzeDirectoryRecursive(File(rootPath), analysis, maxDepth = 15, currentDepth = 0)
+        analysis
+    }
+
+    private fun analyzeDirectoryRecursive(
+        dir: File,
+        analysis: MutableMap<FileCategory, Long>,
+        maxDepth: Int,
+        currentDepth: Int
+    ) {
+        if (currentDepth >= maxDepth) return
+        val files = dir.listFiles() ?: return
+        for (file in files) {
+            if (file.name.startsWith(".")) continue
+            if (file.isDirectory) {
+                analyzeDirectoryRecursive(file, analysis, maxDepth, currentDepth + 1)
+            } else {
+                val ext = file.extension.lowercase()
+                val mimeType = getMimeType(file)
+                val category = getFileCategory(ext, mimeType)
+                analysis[category] = (analysis[category] ?: 0L) + file.length()
+            }
+        }
     }
 
     override suspend fun compressToZip(sourcePaths: List<String>, destPath: String): Result<String> = withContext(Dispatchers.IO) {

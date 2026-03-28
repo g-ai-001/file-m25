@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
@@ -75,6 +76,7 @@ import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import app.file_m25.domain.model.SortMode
 import app.file_m25.domain.model.ViewMode
+import app.file_m25.domain.model.FileCategory
 import app.file_m25.ui.components.CreateFolderDialog
 import app.file_m25.ui.components.DeleteConfirmDialog
 import app.file_m25.ui.components.EmptyState
@@ -86,6 +88,8 @@ import app.file_m25.ui.components.LoadingIndicator
 import app.file_m25.ui.components.RenameDialog
 import app.file_m25.ui.components.CompressDialog
 import app.file_m25.ui.components.StorageIndicator
+import app.file_m25.ui.components.StorageAnalysisScreen
+import app.file_m25.ui.components.CategoryGrid
 import app.file_m25.util.formatDate
 import app.file_m25.util.formatFileSize
 import app.file_m25.util.getSortModeLabel
@@ -183,6 +187,42 @@ fun HomeScreen(
                 onNavigateToSettings = onNavigateToSettings,
                 viewModel = viewModel,
                 snackbarHostState = snackbarHostState
+            )
+        }
+        uiState.showStorageAnalysis -> {
+            StorageAnalysisModeScaffold(
+                uiState = uiState,
+                onBack = { viewModel.exitStorageAnalysis() },
+                onCategoryClick = { category ->
+                    viewModel.exitStorageAnalysis()
+                    viewModel.enterCategoryMode()
+                    viewModel.selectCategory(category)
+                },
+                viewModel = viewModel,
+                snackbarHostState = snackbarHostState
+            )
+        }
+        uiState.showCategoryMode && uiState.selectedCategory != null -> {
+            CategoryModeScaffold(
+                uiState = uiState,
+                onBack = {
+                    viewModel.clearCategorySelection()
+                    viewModel.exitCategoryMode()
+                },
+                onNavigateToSettings = onNavigateToSettings,
+                viewModel = viewModel,
+                snackbarHostState = snackbarHostState,
+                onNavigateToImagePreview = onNavigateToImagePreview,
+                onNavigateToVideoPreview = onNavigateToVideoPreview,
+                onNavigateToAudioPreview = onNavigateToAudioPreview,
+                onNavigateToPdfPreview = onNavigateToPdfPreview
+            )
+        }
+        uiState.showCategoryMode -> {
+            CategorySelectionScaffold(
+                onBack = { viewModel.exitCategoryMode() },
+                onCategoryClick = { viewModel.selectCategory(it) },
+                onStorageAnalysisClick = { viewModel.enterStorageAnalysis() }
             )
         }
         else -> {
@@ -395,6 +435,16 @@ private fun NormalModeScaffold(
                                 },
                                 leadingIcon = {
                                     Icon(Icons.Default.DeleteForever, contentDescription = null)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("分类") },
+                                onClick = {
+                                    viewModel.enterCategoryMode()
+                                    showMoreMenu = false
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Folder, contentDescription = null)
                                 }
                             )
                         }
@@ -757,6 +807,149 @@ private fun MultiSelectModeScaffold(
                         modifier = Modifier.weight(1f)
                     )
                 }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CategorySelectionScaffold(
+    onBack: () -> Unit,
+    onCategoryClick: (FileCategory) -> Unit,
+    onStorageAnalysisClick: () -> Unit
+) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("文件分类") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                    }
+                }
+            )
+        }
+    ) { paddingValues ->
+        CategoryGrid(
+            onCategoryClick = onCategoryClick,
+            onStorageAnalysisClick = onStorageAnalysisClick,
+            modifier = Modifier.padding(paddingValues)
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CategoryModeScaffold(
+    uiState: HomeUiState,
+    onBack: () -> Unit,
+    onNavigateToSettings: () -> Unit,
+    viewModel: HomeViewModel,
+    snackbarHostState: SnackbarHostState,
+    onNavigateToImagePreview: (List<String>, Int) -> Unit,
+    onNavigateToVideoPreview: (String) -> Unit,
+    onNavigateToAudioPreview: (String) -> Unit,
+    onNavigateToPdfPreview: (String) -> Unit
+) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(uiState.selectedCategory?.displayName ?: "分类") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onNavigateToSettings) {
+                        Icon(Icons.Default.Settings, contentDescription = "设置")
+                    }
+                }
+            )
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            when {
+                uiState.isLoading -> LoadingIndicator()
+                uiState.error != null -> EmptyState(message = uiState.error ?: "未知错误")
+                uiState.files.isEmpty() -> EmptyState(message = "暂无${uiState.selectedCategory?.displayName}文件")
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 16.dp)
+                    ) {
+                        items(uiState.files, key = { it.path }) { file ->
+                            FileListItem(
+                                file = file,
+                                onClick = {
+                                    if (file.isDirectory) {
+                                        // 不支持在分类视图中进入文件夹
+                                    } else if (file.mimeType.startsWith("image/")) {
+                                        val imageFiles = uiState.files.filter { it.mimeType.startsWith("image/") }
+                                        val index = imageFiles.indexOf(file)
+                                        onNavigateToImagePreview(imageFiles.map { it.path }, if (index >= 0) index else 0)
+                                    } else if (file.mimeType.startsWith("video/")) {
+                                        onNavigateToVideoPreview(file.path)
+                                    } else if (file.mimeType.startsWith("audio/")) {
+                                        onNavigateToAudioPreview(file.path)
+                                    } else if (file.extension.lowercase() == "pdf") {
+                                        onNavigateToPdfPreview(file.path)
+                                    } else {
+                                        viewModel.selectFile(file)
+                                    }
+                                },
+                                onLongClick = {
+                                    viewModel.selectFile(file)
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun StorageAnalysisModeScaffold(
+    uiState: HomeUiState,
+    onBack: () -> Unit,
+    onCategoryClick: (FileCategory) -> Unit,
+    viewModel: HomeViewModel,
+    snackbarHostState: SnackbarHostState
+) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("存储分析") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                    }
+                }
+            )
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            uiState.storageInfo?.let { info ->
+                StorageAnalysisScreen(
+                    analysis = uiState.storageAnalysis,
+                    totalSize = info.usedSpace,
+                    isLoading = uiState.isLoading,
+                    onCategoryClick = onCategoryClick
+                )
             }
         }
     }
