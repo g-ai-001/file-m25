@@ -93,6 +93,7 @@ import java.io.File
 fun HomeScreen(
     onNavigateToFile: (String) -> Unit,
     onNavigateToSettings: () -> Unit,
+    onNavigateToImagePreview: (List<String>, Int) -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -187,7 +188,8 @@ fun HomeScreen(
                 onEnterFavorites = { viewModel.enterFavoritesMode() },
                 onEnterRecent = { viewModel.enterRecentMode() },
                 viewModel = viewModel,
-                snackbarHostState = snackbarHostState
+                snackbarHostState = snackbarHostState,
+                onNavigateToImagePreview = onNavigateToImagePreview
             )
         }
     }
@@ -300,7 +302,8 @@ private fun NormalModeScaffold(
     onEnterFavorites: () -> Unit,
     onEnterRecent: () -> Unit,
     viewModel: HomeViewModel,
-    snackbarHostState: SnackbarHostState
+    snackbarHostState: SnackbarHostState,
+    onNavigateToImagePreview: (List<String>, Int) -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -401,6 +404,10 @@ private fun NormalModeScaffold(
                                     onClick = {
                                         if (file.isDirectory) {
                                             onNavigateToFile(file.path)
+                                        } else if (file.mimeType.startsWith("image/")) {
+                                            val imageFiles = uiState.files.filter { it.mimeType.startsWith("image/") }
+                                            val index = imageFiles.indexOf(file)
+                                            onNavigateToImagePreview(imageFiles.map { it.path }, if (index >= 0) index else 0)
                                         } else {
                                             viewModel.selectFile(file)
                                             viewModel.addToRecent(file)
@@ -426,6 +433,10 @@ private fun NormalModeScaffold(
                                     onClick = {
                                         if (file.isDirectory) {
                                             onNavigateToFile(file.path)
+                                        } else if (file.mimeType.startsWith("image/")) {
+                                            val imageFiles = uiState.files.filter { it.mimeType.startsWith("image/") }
+                                            val index = imageFiles.indexOf(file)
+                                            onNavigateToImagePreview(imageFiles.map { it.path }, if (index >= 0) index else 0)
                                         } else {
                                             viewModel.selectFile(file)
                                             viewModel.addToRecent(file)

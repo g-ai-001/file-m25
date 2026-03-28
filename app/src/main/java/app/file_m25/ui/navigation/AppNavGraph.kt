@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import app.file_m25.ui.screens.file.FileScreen
 import app.file_m25.ui.screens.home.HomeScreen
+import app.file_m25.ui.screens.imagepreview.ImagePreviewScreen
 import app.file_m25.ui.screens.settings.SettingsScreen
 
 @Composable
@@ -25,6 +26,9 @@ fun AppNavGraph(
                 },
                 onNavigateToSettings = {
                     navController.navigate(Screen.Settings.route)
+                },
+                onNavigateToImagePreview = { paths, index ->
+                    navController.navigate(Screen.ImagePreview.createRoute(paths, index))
                 }
             )
         }
@@ -42,12 +46,32 @@ fun AppNavGraph(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToFile = { newPath ->
                     navController.navigate(Screen.File.createRoute(newPath))
+                },
+                onNavigateToImagePreview = { paths, index ->
+                    navController.navigate(Screen.ImagePreview.createRoute(paths, index))
                 }
             )
         }
 
         composable(Screen.Settings.route) {
             SettingsScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Screen.ImagePreview.route,
+            arguments = listOf(
+                navArgument("paths") { type = NavType.StringType },
+                navArgument("initialIndex") { type = NavType.IntType }
+            )
+        ) { backStackEntry ->
+            val encodedPaths = backStackEntry.arguments?.getString("paths") ?: ""
+            val initialIndex = backStackEntry.arguments?.getInt("initialIndex") ?: 0
+            val paths = encodedPaths.split(",").map { it.decodeUrl() }
+            ImagePreviewScreen(
+                imagePaths = paths,
+                initialIndex = initialIndex,
                 onNavigateBack = { navController.popBackStack() }
             )
         }
