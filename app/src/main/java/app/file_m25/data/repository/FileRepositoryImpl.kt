@@ -24,6 +24,28 @@ import javax.inject.Singleton
 @Singleton
 class FileRepositoryImpl @Inject constructor() : FileRepository {
 
+    private fun getMimeType(file: File): String {
+        if (file.isDirectory) return ""
+        val ext = file.extension.lowercase()
+        return when (ext) {
+            "jpg", "jpeg", "png", "gif", "bmp", "webp" -> "image/*"
+            "mp3", "wav", "ogg", "flac", "aac" -> "audio/*"
+            "mp4", "mkv", "avi", "mov", "wmv" -> "video/*"
+            "pdf" -> "application/pdf"
+            "txt", "log" -> "text/plain"
+            "html", "htm" -> "text/html"
+            "css" -> "text/css"
+            "js" -> "application/javascript"
+            "json" -> "application/json"
+            "xml" -> "application/xml"
+            "zip", "rar", "7z", "tar", "gz" -> "application/zip"
+            "doc", "docx" -> "application/msword"
+            "xls", "xlsx" -> "application/vnd.ms-excel"
+            "ppt", "pptx" -> "application/vnd.ms-powerpoint"
+            else -> "*/*"
+        }
+    }
+
     override fun getFiles(path: String, showHiddenFiles: Boolean): Flow<List<FileItem>> = flow {
         val directory = File(path)
         if (!directory.exists() || !directory.isDirectory) {

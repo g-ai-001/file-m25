@@ -948,7 +948,8 @@ private fun StorageAnalysisModeScaffold(
                     analysis = uiState.storageAnalysis,
                     totalSize = info.usedSpace,
                     isLoading = uiState.isLoading,
-                    onCategoryClick = onCategoryClick
+                    onCategoryClick = onCategoryClick,
+                    onBack = onBack
                 )
             }
         }
