@@ -124,7 +124,7 @@ fun FileScreen(
         MultiSelectModeScaffold(
             uiState = uiState,
             onBack = { viewModel.clearSelection() },
-            onSelectAll = { },
+            onSelectAll = { viewModel.selectAllFiles() },
             onDelete = { viewModel.showDeleteDialog() },
             onCopy = { viewModel.showCopyDialog() },
             onMove = { viewModel.showMoveDialog() }
@@ -527,21 +527,21 @@ private fun MultiSelectModeScaffold(
                     modifier = Modifier
                         .fillMaxWidth()
                         .combinedClickable(
-                            onClick = { },
-                            onLongClick = { }
+                            onClick = { viewModel.toggleFileSelection(file) },
+                            onLongClick = { viewModel.toggleFileSelection(file) }
                         )
                         .padding(horizontal = 16.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Checkbox(
                         checked = uiState.selectedFiles.contains(file),
-                        onCheckedChange = { }
+                        onCheckedChange = { viewModel.toggleFileSelection(file) }
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     FileListItem(
                         file = file,
-                        onClick = { },
-                        onLongClick = { },
+                        onClick = { viewModel.toggleFileSelection(file) },
+                        onLongClick = { viewModel.toggleFileSelection(file) },
                         modifier = Modifier.weight(1f)
                     )
                 }

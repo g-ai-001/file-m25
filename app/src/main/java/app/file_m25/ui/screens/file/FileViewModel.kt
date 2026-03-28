@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -127,7 +128,7 @@ class FileViewModel @Inject constructor(
 
     private fun checkBookmarkStatus(file: FileItem) {
         viewModelScope.launch {
-            preferencesRepository.bookmarks.collect { bookmarks ->
+            preferencesRepository.bookmarks.first().let { bookmarks ->
                 _uiState.update { it.copy(isBookmarked = bookmarks.contains(file.path)) }
             }
         }
@@ -248,6 +249,16 @@ class FileViewModel @Inject constructor(
         _uiState.update { it.copy(selectedFiles = emptySet(), isMultiSelectMode = false) }
     }
 
+    fun selectAllFiles() {
+        _uiState.update { state ->
+            if (state.selectedFiles.size == state.files.size) {
+                state.copy(selectedFiles = emptySet())
+            } else {
+                state.copy(selectedFiles = state.files.toSet())
+            }
+        }
+    }
+
     fun showFileInfoDialog() {
         _uiState.update { it.copy(showFileInfoDialog = true) }
     }
@@ -328,7 +339,7 @@ class FileViewModel @Inject constructor(
 
     fun checkFavoriteStatus(file: FileItem) {
         viewModelScope.launch {
-            favoriteRepository.isFavorite(file.path).collect { isFav ->
+            favoriteRepository.isFavorite(file.path).first().let { isFav ->
                 _uiState.update { it.copy(isFavorite = isFav) }
             }
         }

@@ -301,6 +301,16 @@ class HomeViewModel @Inject constructor(
         _uiState.update { it.copy(selectedFiles = emptySet(), isMultiSelectMode = false) }
     }
 
+    fun selectAllFiles() {
+        _uiState.update { state ->
+            if (state.selectedFiles.size == state.files.size) {
+                state.copy(selectedFiles = emptySet())
+            } else {
+                state.copy(selectedFiles = state.files.toSet())
+            }
+        }
+    }
+
     fun showFileInfoDialog() {
         _uiState.update { it.copy(showFileInfoDialog = true) }
     }
