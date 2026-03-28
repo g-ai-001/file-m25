@@ -4,6 +4,7 @@ import android.content.Intent
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -313,55 +314,33 @@ private fun NormalModeScaffold(
                     IconButton(onClick = { viewModel.enterSearchMode() }) {
                         Icon(Icons.Default.Search, contentDescription = "搜索")
                     }
-                    IconButton(onClick = onEnterRecent) {
-                        Icon(Icons.Default.History, contentDescription = "最近")
-                    }
-                    IconButton(onClick = onEnterFavorites) {
-                        Icon(Icons.Default.Star, contentDescription = "收藏")
-                    }
-                    IconButton(onClick = onShowSortMenu) {
-                        Icon(Icons.Default.Sort, contentDescription = "排序")
-                    }
-                    DropdownMenu(
-                        expanded = showSortMenu,
-                        onDismissRequest = onHideSortMenu
-                    ) {
-                        SortMode.entries.forEach { mode ->
-                            DropdownMenuItem(
-                                text = { Text(getSortModeLabel(mode)) },
-                                onClick = {
-                                    viewModel.setSortMode(mode)
-                                    onHideSortMenu()
-                                },
-                                leadingIcon = {
-                                    if (uiState.sortMode == mode) {
-                                        Icon(
-                                            Icons.Default.Sort,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-                                    }
-                                }
-                            )
+                    Box {
+                        IconButton(onClick = onShowSortMenu) {
+                            Icon(Icons.Default.Sort, contentDescription = "排序")
                         }
-                    }
-                    IconButton(onClick = {
-                        viewModel.setShowHiddenFiles(!uiState.showHiddenFiles)
-                    }) {
-                        Icon(
-                            if (uiState.showHiddenFiles) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                            contentDescription = if (uiState.showHiddenFiles) "隐藏文件" else "显示文件"
-                        )
-                    }
-                    IconButton(onClick = {
-                        viewModel.setViewMode(
-                            if (uiState.viewMode == ViewMode.LIST) ViewMode.GRID else ViewMode.LIST
-                        )
-                    }) {
-                        Icon(
-                            if (uiState.viewMode == ViewMode.LIST) Icons.Default.GridView else Icons.Default.ViewList,
-                            contentDescription = "视图模式"
-                        )
+                        DropdownMenu(
+                            expanded = showSortMenu,
+                            onDismissRequest = onHideSortMenu
+                        ) {
+                            SortMode.entries.forEach { mode ->
+                                DropdownMenuItem(
+                                    text = { Text(getSortModeLabel(mode)) },
+                                    onClick = {
+                                        viewModel.setSortMode(mode)
+                                        onHideSortMenu()
+                                    },
+                                    leadingIcon = {
+                                        if (uiState.sortMode == mode) {
+                                            Icon(
+                                                Icons.Default.Sort,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                    }
+                                )
+                            }
+                        }
                     }
                     IconButton(onClick = onNavigateToSettings) {
                         Icon(Icons.Default.Settings, contentDescription = "设置")
