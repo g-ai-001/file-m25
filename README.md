@@ -39,6 +39,12 @@
 
 ## 版本
 
+### 0.8.2
+- 修复标题栏高度过大问题（面包屑导航单独一行显示）
+- 标题栏按钮数量精简至3个（搜索、排序、视图）
+- 面包屑导航支持横向滚动
+- 将隐藏文件切换功能合并到排序菜单中
+
 ### 0.8.1
 - 修复FileViewModel.checkBookmarkStatus内存泄漏问题（改用first()替代collect）
 - 修复FileViewModel.checkFavoriteStatus内存泄漏问题
